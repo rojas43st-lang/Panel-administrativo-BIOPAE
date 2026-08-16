@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BioPAE — Panel Administrativo PAE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/styles.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ===================== VISTA: LOGIN ===================== -->
+  <div id="view-login" class="login-screen">
+    <div class="login-card">
+      <div class="login-left">
+        <div class="brand">
+          <div class="brand-icon">🥛</div>
+          <span>BioPAE</span>
+        </div>
+        <h1>Que cada almuerzo y cada vaso de leche llegue a quien lo necesita.</h1>
+        <p>Panel de control del Programa de Alimentación Escolar — I.E. Javiera Londoño.
+        Trazabilidad por estudiante, por fecha, sin cupos duplicados y sin desperdicio.
+        El escaneo de QR se realiza en el punto de entrega; aquí se supervisa y decide.</p>
+        <div class="login-footnote">Panel funcional con datos simulados · para validación de diseño</div>
+      </div>
+      <div class="login-right">
+        <h2>Iniciar sesión</h2>
+        <p class="muted">Selecciona tu rol para continuar</p>
+
+        <div id="rol-options" class="rol-options">
+          <button class="rol-option" data-rol="coordinador">
+            <span class="rol-icon">📋</span>
+            <span>
+              <span class="rol-title">Coordinador PAE</span>
+              <span class="rol-desc">Gestiona estudiantes, casos y reportes</span>
+            </span>
+          </button>
+          <button class="rol-option" data-rol="rectora">
+            <span class="rol-icon">🛡️</span>
+            <span>
+              <span class="rol-title">Rectora</span>
+              <span class="rol-desc">Consulta indicadores y reportes generales</span>
+            </span>
+          </button>
+        </div>
+
+        <input id="login-usuario" type="text" placeholder="Correo institucional" />
+        <input id="login-clave" type="password" placeholder="Contraseña" />
+
+        <button id="btn-login" class="btn btn-primary btn-block" disabled>Ingresar ⌄</button>
+        <p class="login-disclaimer">Simulación — no valida credenciales reales.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SHELL PRINCIPAL ===================== -->
+  <div id="view-app" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand brand-sidebar">
+        <div class="brand-icon">🥛</div>
+        <span>BioPAE</span>
+      </div>
+      <nav id="nav-menu" class="nav-menu">
+        <button class="nav-item" data-page="dashboard">📊 Panel general</button>
+        <button class="nav-item" data-page="estudiantes">👥 Estudiantes</button>
+        <button class="nav-item" data-page="historial">🗓️ Historial de entregas</button>
+        <button class="nav-item" data-page="control">🔎 Control diario</button>
+        <button class="nav-item" data-page="casos">⚠️ Casos en revisión</button>
+        <button class="nav-item" data-page="reportes">📈 Reportes</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div id="sidebar-rol" class="sidebar-rol"></div>
+        <div id="sidebar-usuario" class="sidebar-usuario"></div>
+        <button id="btn-logout" class="btn-logout">⏏ Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <div class="topbar">
+        <div class="muted">I.E. Javiera Londoño · Programa de Alimentación Escolar</div>
+        <div id="topbar-fecha" class="topbar-fecha"></div>
+      </div>
+      <div id="page-content" class="page-content"></div>
+    </main>
+  </div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
