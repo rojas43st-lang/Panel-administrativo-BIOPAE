@@ -21,14 +21,12 @@ templates = Jinja2Templates(
 )
 
 
-@app.get("/")
-async def root():
-    return {"mensaje": "BioPAE funcionando"}
-
-
-@app.get("/api")
-async def api_root():
-    return {"mensaje": "API BioPAE funcionando"}
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html"
+    )
 
 
 @app.get("/api/admin", response_class=HTMLResponse)
