@@ -21,6 +21,11 @@ templates = Jinja2Templates(
 )
 
 
+@app.get("/api")
+async def prueba():
+    return {"mensaje": "FastAPI funciona en Vercel"}
+
+
 @app.get("/api/admin", response_class=HTMLResponse)
 async def panel_admin(request: Request):
     return templates.TemplateResponse(
