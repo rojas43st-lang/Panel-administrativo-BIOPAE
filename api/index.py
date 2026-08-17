@@ -21,9 +21,14 @@ templates = Jinja2Templates(
 )
 
 
+@app.get("/")
+async def root():
+    return {"mensaje": "BioPAE funcionando"}
+
+
 @app.get("/api")
-async def prueba():
-    return {"mensaje": "FastAPI funciona en Vercel"}
+async def api_root():
+    return {"mensaje": "API BioPAE funcionando"}
 
 
 @app.get("/api/admin", response_class=HTMLResponse)
