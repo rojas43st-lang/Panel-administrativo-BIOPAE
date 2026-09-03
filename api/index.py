@@ -21,8 +21,16 @@ templates = Jinja2Templates(
 )
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/api", response_class=HTMLResponse)
 async def root(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html"
+    )
+
+
+@app.get("/api/admin", response_class=HTMLResponse)
+async def panel_admin(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="index.html"
