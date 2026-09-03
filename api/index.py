@@ -27,11 +27,3 @@ async def root(request: Request):
         request=request,
         name="index.html"
     )
-
-
-@app.get("/api/admin", response_class=HTMLResponse)
-async def panel_admin(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html"
-    )
