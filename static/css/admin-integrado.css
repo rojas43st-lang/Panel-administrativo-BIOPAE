@@ -1,0 +1,25 @@
+/* Ajustes de integración del panel administrativo con BIOPAE */
+.admin-body { min-height:100vh; }
+.admin-shell { min-height:100vh; display:flex; }
+.admin-shell .sidebar { display:flex; flex-direction:column; min-width:245px; }
+.admin-side-caption { padding:0 24px; color:rgba(255,255,255,.68); font-size:12px; letter-spacing:.06em; text-transform:uppercase; }
+.admin-shell .nav-menu { display:flex; flex-direction:column; gap:6px; }
+.admin-shell .nav-item { width:100%; text-align:left; border:0; background:transparent; color:inherit; }
+.admin-shell .sidebar-footer { margin-top:auto; }
+.admin-back { display:block; margin:12px 0; color:inherit; text-decoration:none; font-size:13px; }
+.admin-shell .btn-logout { width:100%; }
+.admin-shell .main-area { min-width:0; flex:1; }
+.admin-shell .page-content { padding:26px; }
+.admin-kpis { margin:20px 0; }
+.admin-panel-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; margin:18px 0; box-shadow:0 5px 18px rgba(20,64,58,.04); }
+.admin-panel-card h2 { margin:0 0 14px; font-size:20px; }
+.admin-filter { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:18px 0; }
+.admin-filter input { min-height:40px; border:1px solid var(--border); border-radius:9px; padding:8px 11px; background:#fff; color:var(--text-primary); }
+.admin-filter input[type=search] { min-width:240px; }
+.table-wrap { width:100%; overflow-x:auto; }
+.admin-panel-card table { width:100%; border-collapse:collapse; font-size:13px; }
+.admin-panel-card th,.admin-panel-card td { padding:12px 10px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }
+.admin-panel-card th { color:var(--text-muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em; background:var(--surface-alt); }
+.admin-panel-card tr:last-child td { border-bottom:0; }
+.error-box { border:1px solid #e4a49b; border-radius:12px; padding:16px; background:#fff1ee; color:#812c20; }
+@media(max-width:800px) { .admin-shell { display:block; } .admin-shell .sidebar { min-width:0; } .admin-shell .nav-menu { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); padding:12px; } .admin-shell .nav-item { padding:10px; } .admin-shell .page-content { padding:16px; } .admin-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
