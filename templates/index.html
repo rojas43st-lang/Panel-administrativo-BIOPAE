@@ -1,82 +1,209 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BioPAE — Acceso administrativo</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/css/admin-panel.css" />
-<script src="https://unpkg.com/htmx.org@2.0.4"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>BioPAE — Panel Administrativo PAE</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="/static/css/styles.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
+
 <body>
 
-  <!-- ===================== VISTA: LOGIN ===================== -->
-  <div id="view-login" class="login-screen {% if autenticado %}hidden{% endif %}">
-    <div class="login-card">
-      <div class="login-left">
-        <div class="brand">
-          <div class="brand-icon">🥛</div>
-          <span>BioPAE</span>
+    <!-- ===================== INICIO DE SESIÓN ===================== -->
+
+    <div
+        id="view-login"
+        class="login-screen {% if autenticado %}hidden{% endif %}"
+    >
+        <div class="login-card">
+
+            <div class="login-left">
+
+                <div class="brand">
+                    <div class="brand-icon">🥛</div>
+                    <span>BioPAE</span>
+                </div>
+
+                <h1>
+                    Que cada almuerzo y cada vaso de leche llegue a quien lo necesita.
+                </h1>
+
+                <p>
+                    Panel de control del Programa de Alimentación Escolar
+                    — I.E. Javiera Londoño.
+                    Trazabilidad por estudiante y por fecha, sin cupos
+                    duplicados y sin desperdicio.
+                </p>
+
+                <div class="login-footnote">
+                    Sistema de administración del Programa de Alimentación Escolar.
+                </div>
+
+            </div>
+
+            <div class="login-right">
+
+                <h2>Iniciar sesión</h2>
+
+                <p class="muted">
+                    Ingresa tus credenciales para continuar.
+                </p>
+
+                <form method="post" action="/admin/login">
+
+                    <label for="login-usuario">Usuario</label>
+
+                    <input
+                        id="login-usuario"
+                        name="usuario"
+                        type="text"
+                        placeholder="Nombre de usuario"
+                        autocomplete="username"
+                        required
+                    >
+
+                    <label for="login-clave">Contraseña</label>
+
+                    <input
+                        id="login-clave"
+                        name="contrasena"
+                        type="password"
+                        placeholder="Contraseña"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary btn-block"
+                    >
+                        Ingresar
+                    </button>
+
+                    {% if error %}
+                        <p class="login-error" role="alert">
+                            {{ error }}
+                        </p>
+                    {% endif %}
+
+                </form>
+
+            </div>
+
         </div>
-        <h1>Que cada almuerzo y cada vaso de leche llegue a quien lo necesita.</h1>
-        <p>Panel de control del Programa de Alimentación Escolar — I.E. Javiera Londoño.
-        Trazabilidad por estudiante, por fecha, sin cupos duplicados y sin desperdicio.
-        El escaneo de QR se realiza en el punto de entrega; aquí se supervisa y decide.</p>
-        <div class="login-footnote">Panel funcional con datos simulados · para validación de diseño</div>
-      </div>
-      <div class="login-right">
-        <h2>Iniciar sesión</h2>
-        <p class="muted">Ingresa tus credenciales para consultar los datos del PAE</p>
-        <form id="admin-login-form" hx-post="/admin/login" hx-target="#login-mensaje" hx-swap="innerHTML">
-          <input id="login-usuario" name="usuario" type="text" placeholder="Usuario" autocomplete="username" required />
-          <input id="login-clave" name="contrasena" type="password" placeholder="Contraseña" autocomplete="current-password" required />
-          <button id="btn-login" type="submit" class="btn btn-primary btn-block">Ingresar</button>
-          <div id="login-mensaje" class="login-error" role="alert" aria-live="polite"></div>
-        </form>
-        <p class="login-disclaimer">Acceso protegido para el personal autorizado.</p>
-      </div>
     </div>
-  </div>
 
-  {% if autenticado %}
-  <!-- ===================== SHELL PRINCIPAL ===================== -->
-  <div id="view-app" class="app-shell {% if not autenticado %}hidden{% endif %}">
-    <aside class="sidebar">
-      <div class="brand brand-sidebar">
-        <div class="brand-icon">🥛</div>
-        <span>BioPAE</span>
-      </div>
-      <nav id="nav-menu" class="nav-menu">
-        <button class="nav-item" data-page="dashboard">📊 Panel general</button>
-        <button class="nav-item" data-page="estudiantes">👥 Estudiantes</button>
-        <button class="nav-item" data-page="historial">🗓️ Historial de entregas</button>
-        <button class="nav-item" data-page="control">🔎 Control diario</button>
-        <button class="nav-item" data-page="casos">⚠️ Casos en revisión</button>
-        <button class="nav-item" data-page="reportes">📈 Reportes</button>
-      </nav>
-      <div class="sidebar-footer">
-        <div id="sidebar-rol" class="sidebar-rol"></div>
-        <div id="sidebar-usuario" class="sidebar-usuario"></div>
-        <form method="post" action="/admin/logout"><button id="btn-logout" type="submit" class="btn-logout">⏏ Cerrar sesión</button></form>
-      </div>
-    </aside>
 
-    <main class="main-area">
-      <div class="topbar">
-        <div class="muted">I.E. Javiera Londoño · Programa de Alimentación Escolar</div>
-        <div id="topbar-fecha" class="topbar-fecha"></div>
-      </div>
-      <div id="page-content" class="page-content"></div>
-    </main>
-  </div>
+    <!-- ===================== PANEL ADMINISTRATIVO ===================== -->
 
-  {% endif %}
+    <div
+        id="view-app"
+        class="app-shell {% if not autenticado %}hidden{% endif %}"
+    >
 
-{% if autenticado %}
-<script>window.ADMIN_SESSION = { rol: "coordinador", usuario: {{ usuario|tojson }} };</script>
-<script src="/static/js/app.js"></script>
-{% endif %}
+        <!-- BARRA LATERAL -->
+
+        <aside class="sidebar">
+
+            <div class="brand brand-sidebar">
+                <div class="brand-icon">🥛</div>
+                <span>BioPAE</span>
+            </div>
+
+            <nav id="nav-menu" class="nav-menu">
+
+                <button class="nav-item" data-page="dashboard">
+                    📊 Panel general
+                </button>
+
+                <button class="nav-item" data-page="estudiantes">
+                    👥 Estudiantes
+                </button>
+
+                <button class="nav-item" data-page="historial">
+                    🗓️ Historial de entregas
+                </button>
+
+                <button class="nav-item" data-page="control">
+                    🔎 Control diario
+                </button>
+
+                <button class="nav-item" data-page="casos">
+                    ⚠️ Casos en revisión
+                </button>
+
+                <button class="nav-item" data-page="reportes">
+                    📈 Reportes
+                </button>
+
+            </nav>
+
+            <div class="sidebar-footer">
+
+                <div id="sidebar-rol" class="sidebar-rol">
+                    Administrador
+                </div>
+
+                <div id="sidebar-usuario" class="sidebar-usuario">
+                    {{ usuario if autenticado else "" }}
+                </div>
+
+                <form method="post" action="/admin/logout">
+                    <button type="submit" class="btn-logout">
+                        ⏏ Cerrar sesión
+                    </button>
+                </form>
+
+            </div>
+
+        </aside>
+
+
+        <!-- CONTENIDO PRINCIPAL -->
+
+        <main class="main-area">
+
+            <div class="topbar">
+
+                <div class="muted">
+                    I.E. Javiera Londoño · Programa de Alimentación Escolar
+                </div>
+
+                <div id="topbar-fecha" class="topbar-fecha"></div>
+
+            </div>
+
+            <div id="page-content" class="page-content"></div>
+
+        </main>
+
+    </div>
+
+
+    <!-- JAVASCRIPT DEL PANEL -->
+
+    <script src="/static/js/app.js"></script>
+
+    <script>
+        /*
+         * El inicio de sesión lo valida FastAPI.
+         * No se permite entrar mediante una simulación de JavaScript.
+         */
+        function initLogin() {
+            // La autenticación se realiza en el servidor.
+        }
+    </script>
+
 </body>
 </html>
