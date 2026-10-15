@@ -194,7 +194,15 @@
 
     <!-- JAVASCRIPT DEL PANEL -->
 
-    <script src="/static/js/app.js"></script>
+    
+<script>
+    window.ADMIN_SESSION = {{ admin_session | tojson }};
+</script>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
+
 
     <script>
         /*
