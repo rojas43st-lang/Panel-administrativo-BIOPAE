@@ -8,13 +8,14 @@
     <title>BioPAE — Panel Administrativo PAE</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
+
     <link
         href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet"
     >
 
-   <link rel="stylesheet" href="/static/css/admin-panel.css">
-<link rel="stylesheet" href="/static/css/admin-integrado.css">
+    <link rel="stylesheet" href="/static/css/admin-panel.css">
+    <link rel="stylesheet" href="/static/css/admin-integrado.css">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
@@ -192,27 +193,13 @@
     </div>
 
 
-    <!-- JAVASCRIPT DEL PANEL -->
-
-    
-<script>
-    window.ADMIN_SESSION = {{ admin_session | tojson }};
-</script>
-
-<script src="/static/js/app.js"></script>
-</body>
-</html>
-
+    <!-- ===================== SESIÓN Y JAVASCRIPT ===================== -->
 
     <script>
-        /*
-         * El inicio de sesión lo valida FastAPI.
-         * No se permite entrar mediante una simulación de JavaScript.
-         */
-        function initLogin() {
-            // La autenticación se realiza en el servidor.
-        }
+        window.ADMIN_SESSION = {{ admin_session | tojson }};
     </script>
+
+    <script src="/static/js/app.js"></script>
 
 </body>
 </html>
