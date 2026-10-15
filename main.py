@@ -12,6 +12,7 @@ load_dotenv()
 
 app = FastAPI()
 
+# Configuración de las sesiones
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SESSION_SECRET", "clave-local-solo-desarrollo"),
@@ -19,19 +20,27 @@ app.add_middleware(
     https_only=os.getenv("COOKIE_HTTPS_ONLY", "true").lower() == "true",
 )
 
+# Archivos estáticos y plantillas
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/", response_class=HTMLResponse)
 async def inicio(request: Request):
+    # Si ya inició sesión, entrar directamente al panel
     if request.session.get("autenticado"):
         return RedirectResponse("/admin", status_code=303)
 
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"autenticado": False, "error": None},
+        context={
+            "autenticado": False,
+            "error": None,
+            "usuario": None,
+            "admin_session": None,
+        },
     )
 
 
@@ -44,6 +53,7 @@ async def iniciar_sesion(
     admin_usuario = os.getenv("ADMIN_USER")
     admin_contrasena = os.getenv("ADMIN_PASSWORD")
 
+    # Comprobar que las variables estén configuradas
     if not admin_usuario or not admin_contrasena:
         return templates.TemplateResponse(
             request=request,
@@ -51,10 +61,13 @@ async def iniciar_sesion(
             context={
                 "autenticado": False,
                 "error": "Falta configurar el usuario o la contraseña en Vercel.",
+                "usuario": None,
+                "admin_session": None,
             },
             status_code=500,
         )
 
+    # Validar las credenciales
     if usuario != admin_usuario or contrasena != admin_contrasena:
         return templates.TemplateResponse(
             request=request,
@@ -62,10 +75,13 @@ async def iniciar_sesion(
             context={
                 "autenticado": False,
                 "error": "Usuario o contraseña incorrectos.",
+                "usuario": None,
+                "admin_session": None,
             },
             status_code=401,
         )
 
+    # Crear una nueva sesión
     request.session.clear()
     request.session["autenticado"] = True
     request.session["usuario"] = usuario
@@ -75,15 +91,23 @@ async def iniciar_sesion(
 
 @app.get("/admin", response_class=HTMLResponse)
 async def panel_admin(request: Request):
+    # Impedir el acceso sin iniciar sesión
     if not request.session.get("autenticado"):
         return RedirectResponse("/", status_code=303)
+
+    usuario_actual = request.session.get("usuario", "Administrador")
 
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "autenticado": True,
-            "usuario": request.session.get("usuario"),
+            "usuario": usuario_actual,
+            "admin_session": {
+                "usuario": usuario_actual,
+                "rol": "coordinador",
+            },
+            "error": None,
         },
     )
 
