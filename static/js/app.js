@@ -279,7 +279,7 @@ function el(html) {
 
 /* ==================== ESTADO DE SESIÓN / NAVEGACIÓN ==================== */
 
-let sesion = null; // { rol, usuario }
+let sesion = window.ADMIN_SESSION || null; // sesión validada por FastAPI
 let paginaActual = "dashboard";
 const chartRegistry = {};
 
@@ -291,27 +291,7 @@ function destruirCharts() {
 /* ==================== LOGIN ==================== */
 
 function initLogin() {
-  let rolSeleccionado = null;
-  const options = document.querySelectorAll(".rol-option");
-  const btnLogin = document.getElementById("btn-login");
-
-  options.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      rolSeleccionado = btn.dataset.rol;
-      options.forEach((b) => b.classList.toggle("active", b === btn));
-      btnLogin.disabled = false;
-    });
-  });
-
-  btnLogin.addEventListener("click", () => {
-    if (!rolSeleccionado) return;
-    const usuarioInput = document.getElementById("login-usuario").value.trim();
-    const usuario =
-      usuarioInput ||
-      (rolSeleccionado === "coordinador" ? "coord. Diana Ossa" : "rectora@javierailondono.edu.co");
-    sesion = { rol: rolSeleccionado, usuario };
-    mostrarApp();
-  });
+  // El inicio de sesión lo valida FastAPI en el servidor mediante HTMX.
 }
 
 function mostrarApp() {
@@ -327,14 +307,7 @@ function mostrarApp() {
 }
 
 function cerrarSesion() {
-  sesion = null;
-  destruirCharts();
-  document.getElementById("view-app").classList.add("hidden");
-  document.getElementById("view-login").classList.remove("hidden");
-  document.querySelectorAll(".rol-option").forEach((b) => b.classList.remove("active"));
-  document.getElementById("btn-login").disabled = true;
-  document.getElementById("login-usuario").value = "";
-  document.getElementById("login-clave").value = "";
+  // El cierre de sesión se procesa en el servidor.
 }
 
 function irAPagina(pagina) {
@@ -970,9 +943,15 @@ function renderReportes() {
 /* ==================== ARRANQUE ==================== */
 
 document.addEventListener("DOMContentLoaded", () => {
-  initLogin();
-  document.getElementById("btn-logout").addEventListener("click", cerrarSesion);
+  if (!sesion) return;
+  const rol = document.getElementById("sidebar-rol");
+  const usuario = document.getElementById("sidebar-usuario");
+  const fecha = document.getElementById("topbar-fecha");
+  if (rol) rol.textContent = "Administrador";
+  if (usuario) usuario.textContent = sesion.usuario || "Administrador";
+  if (fecha) fecha.textContent = fechaLarga(HOY);
   document.querySelectorAll(".nav-item").forEach((btn) => {
     btn.addEventListener("click", () => irAPagina(btn.dataset.page));
   });
+  irAPagina("dashboard");
 });
