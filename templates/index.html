@@ -1,91 +1,81 @@
+{% if fragmento %}
+{% if seccion == 'dashboard' %}
+<div class="page-header"><h1>Panel general</h1><p>Indicadores calculados con los registros reales de BIOPAE.</p></div>
+<div class="info-banner">Los datos de este panel se consultan directamente desde PostgreSQL en Neon. Las cifras reflejan entregas registradas; no son datos simulados.</div>
+<div class="grid grid-4 admin-kpis">
+  <div class="kpi-card"><div class="kpi-label">Estudiantes activos</div><div class="kpi-value">{{ estudiantes_activos }}</div><div class="kpi-foot">Registrados en BIOPAE</div></div>
+  <div class="kpi-card"><div class="kpi-label">Entregas de hoy</div><div class="kpi-value">{{ entregas_hoy }}</div><div class="kpi-foot">Con estado entregado</div></div>
+  <div class="kpi-card"><div class="kpi-label">Vasos de leche hoy</div><div class="kpi-value">{{ vasos_hoy }}</div><div class="kpi-foot">Registros del día</div></div>
+  <div class="kpi-card"><div class="kpi-label">Almuerzos hoy</div><div class="kpi-value">{{ almuerzos_hoy }}</div><div class="kpi-foot">Registros del día</div></div>
+</div>
+<div class="admin-panel-card"><h2>Disponibilidad de alimentos</h2><div class="table-wrap"><table><thead><tr><th>Alimento</th><th>Unidades disponibles</th><th>Estado</th></tr></thead><tbody>{% for a in alimentos %}<tr><td>{{ '🥛 ' if a[0] == 1 else '🍽️ ' }}{{ a[1] }}</td><td>{{ a[2] }}</td><td><span class="badge {{ 'badge-activo' if a[3] else 'badge-suspendido' }}">{{ 'Activo' if a[3] else 'Inactivo' }}</span></td></tr>{% else %}<tr><td colspan="3">No se encontraron alimentos con ID 1 y 2.</td></tr>{% endfor %}</tbody></table></div></div>
+{% elif seccion == 'estudiantes' %}
+<div class="page-header"><h1>Estudiantes</h1><p>Consulta de estudiantes registrados en la base de datos.</p></div>
+<form class="admin-filter" hx-get="/admin/seccion/estudiantes" hx-target="#page-content" hx-swap="innerHTML"><input type="search" name="busqueda" value="{{ busqueda }}" placeholder="Buscar por nombre, apellido o ID"><button class="btn btn-primary" type="submit">Buscar</button><button class="btn btn-ghost" type="button" hx-get="/admin/seccion/estudiantes" hx-target="#page-content">Limpiar</button></form>
+<div class="admin-panel-card"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Nombre</th><th>Apellido</th><th>Estado</th></tr></thead><tbody>{% for e in estudiantes %}<tr><td>{{ e[0] }}</td><td>{{ e[1] }}</td><td>{{ e[2] }}</td><td><span class="badge {{ 'badge-activo' if e[3] else 'badge-suspendido' }}">{{ 'Activo' if e[3] else 'Inactivo' }}</span></td></tr>{% else %}<tr><td colspan="4">No hay estudiantes que coincidan con la búsqueda.</td></tr>{% endfor %}</tbody></table></div></div>
+{% elif seccion == 'historial' or seccion == 'control' %}
+<div class="page-header"><h1>{{ 'Historial de entregas' if seccion == 'historial' else 'Control diario' }}</h1><p>{{ 'Consulta las entregas registradas por fecha.' if seccion == 'historial' else 'Revisa las entregas que el escáner registró para el día seleccionado.' }}</p></div>
+<form class="admin-filter" hx-get="/admin/seccion/{{ seccion }}" hx-target="#page-content" hx-swap="innerHTML"><label for="fecha-admin">Fecha</label><input id="fecha-admin" type="date" name="fecha" value="{{ fecha }}" required><button class="btn btn-primary" type="submit">Consultar</button></form>
+<div class="admin-panel-card"><p class="muted">Registros encontrados: <strong>{{ entregas|length }}</strong> (máximo 1.000 por consulta).</p><div class="table-wrap"><table><thead><tr><th>ID</th><th>Estudiante</th><th>Alimento</th><th>Fecha</th><th>Hora</th><th>Estado</th><th>Observación</th></tr></thead><tbody>{% for e in entregas %}<tr><td>{{ e[0] }}</td><td>{{ e[2] }} {{ e[3] }} <span class="muted">(#{{ e[1] }})</span></td><td>{{ e[5] }}</td><td>{{ e[6] }}</td><td>{{ e[7] or '—' }}</td><td><span class="badge {{ 'badge-activo' if e[8] == 'entregado' else 'badge-suspendido' }}">{{ e[8] or 'Sin estado' }}</span></td><td>{{ e[9] or '—' }}</td></tr>{% else %}<tr><td colspan="7">No hay entregas registradas para esta fecha.</td></tr>{% endfor %}</tbody></table></div></div>
+{% elif seccion == 'casos' %}
+<div class="page-header"><h1>Casos en revisión</h1><p>Seguimiento de novedades e incidencias del PAE.</p></div>
+<div class="info-banner">Esta sección todavía no puede mostrar casos reales: la estructura actual de la base de datos no incluye una tabla de casos o incidencias. No se muestran datos ficticios.</div>
+<div class="admin-panel-card"><h2>Qué falta para habilitarla</h2><p>Definir qué debe registrar un caso (estudiante, motivo, fecha, estado y decisión) y crear la tabla correspondiente antes de activar el seguimiento.</p></div>
+{% elif seccion == 'reportes' %}
+<div class="page-header"><h1>Reportes</h1><p>Resumen de entregas por fecha y alimento, usando registros reales.</p></div>
+<form class="admin-filter" hx-get="/admin/seccion/reportes" hx-target="#page-content" hx-swap="innerHTML"><label for="fecha-reporte">Ver detalle del día</label><input id="fecha-reporte" type="date" name="fecha" value="{{ fecha }}"><button class="btn btn-primary" type="submit">Consultar</button></form>
+<div class="admin-panel-card"><h2>Actividad de los últimos 14 días</h2><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Alimento</th><th>Total entregado</th></tr></thead><tbody>{% for r in resumen_reportes %}<tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td></tr>{% else %}<tr><td colspan="3">No hay entregas registradas en el período.</td></tr>{% endfor %}</tbody></table></div></div>
+<div class="admin-panel-card"><h2>Detalle del {{ fecha }}</h2><div class="table-wrap"><table><thead><tr><th>Estudiante</th><th>Alimento</th><th>Hora</th><th>Estado</th></tr></thead><tbody>{% for e in entregas %}<tr><td>{{ e[2] }} {{ e[3] }}</td><td>{{ e[5] }}</td><td>{{ e[7] or '—' }}</td><td>{{ e[8] or 'Sin estado' }}</td></tr>{% else %}<tr><td colspan="4">No hay entregas para esta fecha.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endif %}
+
+{% else %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BioPAE — Panel Administrativo PAE</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/css/styles.css" />
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioPAE — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/admin-panel.css">
+  <link rel="stylesheet" href="/static/css/admin-integrado.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
-<body>
-
-  <!-- ===================== VISTA: LOGIN ===================== -->
-  <div id="view-login" class="login-screen">
-    <div class="login-card">
-      <div class="login-left">
-        <div class="brand">
-          <div class="brand-icon">🥛</div>
-          <span>BioPAE</span>
-        </div>
-        <h1>Que cada almuerzo y cada vaso de leche llegue a quien lo necesita.</h1>
-        <p>Panel de control del Programa de Alimentación Escolar — I.E. Javiera Londoño.
-        Trazabilidad por estudiante, por fecha, sin cupos duplicados y sin desperdicio.
-        El escaneo de QR se realiza en el punto de entrega; aquí se supervisa y decide.</p>
-        <div class="login-footnote">Panel funcional con datos simulados · para validación de diseño</div>
-      </div>
-      <div class="login-right">
-        <h2>Iniciar sesión</h2>
-        <p class="muted">Selecciona tu rol para continuar</p>
-
-        <div id="rol-options" class="rol-options">
-          <button class="rol-option" data-rol="coordinador">
-            <span class="rol-icon">📋</span>
-            <span>
-              <span class="rol-title">Coordinador PAE</span>
-              <span class="rol-desc">Gestiona estudiantes, casos y reportes</span>
-            </span>
-          </button>
-          <button class="rol-option" data-rol="rectora">
-            <span class="rol-icon">🛡️</span>
-            <span>
-              <span class="rol-title">Rectora</span>
-              <span class="rol-desc">Consulta indicadores y reportes generales</span>
-            </span>
-          </button>
-        </div>
-
-        <input id="login-usuario" type="text" placeholder="Correo institucional" />
-        <input id="login-clave" type="password" placeholder="Contraseña" />
-
-        <button id="btn-login" class="btn btn-primary btn-block" disabled>Ingresar ⌄</button>
-        <p class="login-disclaimer">Simulación — no valida credenciales reales.</p>
-      </div>
+<body class="admin-body">
+<div class="app-shell admin-shell">
+  <aside class="sidebar">
+    <div class="brand brand-sidebar"><div class="brand-icon">🥛</div><span>BioPAE</span></div>
+    <p class="admin-side-caption">Panel administrativo</p>
+    <nav class="nav-menu" aria-label="Secciones del panel">
+      <button class="nav-item active" hx-get="/admin/seccion/dashboard" hx-target="#page-content" hx-swap="innerHTML">📊 Panel general</button>
+      <button class="nav-item" hx-get="/admin/seccion/estudiantes" hx-target="#page-content" hx-swap="innerHTML">👥 Estudiantes</button>
+      <button class="nav-item" hx-get="/admin/seccion/historial" hx-target="#page-content" hx-swap="innerHTML">🗓️ Historial de entregas</button>
+      <button class="nav-item" hx-get="/admin/seccion/control" hx-target="#page-content" hx-swap="innerHTML">🔎 Control diario</button>
+      <button class="nav-item" hx-get="/admin/seccion/casos" hx-target="#page-content" hx-swap="innerHTML">⚠️ Casos en revisión</button>
+      <button class="nav-item" hx-get="/admin/seccion/reportes" hx-target="#page-content" hx-swap="innerHTML">📈 Reportes</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-rol">Administrador BIOPAE</div>
+      <div class="sidebar-usuario">{{ usuario }}</div>
+      <a class="admin-back" href="/menu">← Volver al menú</a>
+      <form method="post" action="/logout"><button class="btn-logout" type="submit">⏏ Cerrar sesión</button></form>
     </div>
-  </div>
-
-  <!-- ===================== SHELL PRINCIPAL ===================== -->
-  <div id="view-app" class="app-shell hidden">
-    <aside class="sidebar">
-      <div class="brand brand-sidebar">
-        <div class="brand-icon">🥛</div>
-        <span>BioPAE</span>
-      </div>
-      <nav id="nav-menu" class="nav-menu">
-        <button class="nav-item" data-page="dashboard">📊 Panel general</button>
-        <button class="nav-item" data-page="estudiantes">👥 Estudiantes</button>
-        <button class="nav-item" data-page="historial">🗓️ Historial de entregas</button>
-        <button class="nav-item" data-page="control">🔎 Control diario</button>
-        <button class="nav-item" data-page="casos">⚠️ Casos en revisión</button>
-        <button class="nav-item" data-page="reportes">📈 Reportes</button>
-      </nav>
-      <div class="sidebar-footer">
-        <div id="sidebar-rol" class="sidebar-rol"></div>
-        <div id="sidebar-usuario" class="sidebar-usuario"></div>
-        <button id="btn-logout" class="btn-logout">⏏ Cerrar sesión</button>
-      </div>
-    </aside>
-
-    <main class="main-area">
-      <div class="topbar">
-        <div class="muted">I.E. Javiera Londoño · Programa de Alimentación Escolar</div>
-        <div id="topbar-fecha" class="topbar-fecha"></div>
-      </div>
-      <div id="page-content" class="page-content"></div>
-    </main>
-  </div>
-
-<script src="/static/js/app.js"></script>
+  </aside>
+  <main class="main-area">
+    <div class="topbar"><div class="muted">I.E. Javiera Londoño · Programa de Alimentación Escolar</div><div class="topbar-fecha">{{ hoy }}</div></div>
+    <div id="page-content" class="page-content" hx-get="/admin/seccion/dashboard" hx-trigger="load" hx-swap="innerHTML">
+      <p class="muted">Cargando información desde Neon…</p>
+    </div>
+  </main>
+</div>
+<script>
+  document.body.addEventListener('htmx:beforeRequest', function (event) {
+    const source = event.detail.elt;
+    if (source && source.classList && source.classList.contains('nav-item')) {
+      document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('active', item === source));
+    }
+  });
+</script>
 </body>
 </html>
+
+{% endif %}
