@@ -106,10 +106,7 @@
 
 
     <!-- ===================== PANEL ADMINISTRATIVO ===================== -->
-
-    <div
-        id="view-app"
-        class="app-shell {% if not autenticado %}hidden{% endif %}"
+<div id="view-app" class="app-shell {% if not autenticado %}hidden{% endif %}" {% if not autenticado %}style="display:none"{% endif %}>
     >
 
         <!-- BARRA LATERAL -->
