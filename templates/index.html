@@ -22,9 +22,11 @@
 
 <body>
 
-    <!-- ===================== INICIO DE SESIÓN ===================== -->
+    <!-- INICIO DE SESIÓN -->
 
-   <div id="view-login" class="login-screen {% if autenticado %}hidden{% endif %}" {% if autenticado %}style="display:none"{% endif %}>
+    <div
+        id="view-login"
+        class="login-screen {% if autenticado %}hidden{% endif %}"
     >
         <div class="login-card">
 
@@ -104,9 +106,11 @@
         </div>
     </div>
 
+    <!-- PANEL ADMINISTRATIVO -->
 
-    <!-- ===================== PANEL ADMINISTRATIVO ===================== -->
-<div id="view-app" class="app-shell {% if not autenticado %}hidden{% endif %}" {% if not autenticado %}style="display:none"{% endif %}>
+    <div
+        id="view-app"
+        class="app-shell {% if not autenticado %}hidden{% endif %}"
     >
 
         <!-- BARRA LATERAL -->
@@ -166,7 +170,6 @@
 
         </aside>
 
-
         <!-- CONTENIDO PRINCIPAL -->
 
         <main class="main-area">
@@ -187,8 +190,7 @@
 
     </div>
 
-
-    <!-- ===================== SESIÓN Y JAVASCRIPT ===================== -->
+    <!-- SESIÓN Y JAVASCRIPT -->
 
     <script>
         window.ADMIN_SESSION = {{ admin_session | tojson }};
