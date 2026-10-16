@@ -1,5 +1,6 @@
 
 import os
+from pathlib import Path
 
 import psycopg
 from dotenv import load_dotenv
@@ -9,13 +10,18 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-load_dotenv()
+# =========================================================
+# CONFIGURACIÓN GENERAL
+# =========================================================
+
+BASE_DIR = Path(__file__).resolve().parent
+
+load_dotenv(BASE_DIR / ".env")
 
 app = FastAPI(title="Panel Administrativo BIOPAE")
 
-
 # =========================================================
-# CONFIGURACIÓN DE SESIONES
+# SESIONES
 # =========================================================
 
 app.add_middleware(
@@ -31,47 +37,81 @@ app.add_middleware(
     ).lower() == "true",
 )
 
-
 # =========================================================
 # ARCHIVOS ESTÁTICOS Y PLANTILLAS
 # =========================================================
 
-from pathlib import Path
+STATIC_DIR = BASE_DIR / "static"
+TEMPLATES_DIR = BASE_DIR / "templates"
 
-BASE_DIR = Path(__file__).resolve().parent
+if not STATIC_DIR.is_dir():
+    raise RuntimeError(
+        f"No se encontró la carpeta estática: {STATIC_DIR}"
+    )
+
+if not TEMPLATES_DIR.is_dir():
+    raise RuntimeError(
+        f"No se encontró la carpeta de plantillas: {TEMPLATES_DIR}"
+    )
 
 app.mount(
     "/static",
-    StaticFiles(directory=str(BASE_DIR / "static")),
+    StaticFiles(directory=str(STATIC_DIR)),
     name="static"
 )
 
-templates = Jinja2Templates(directory="templates")
-
+templates = Jinja2Templates(
+    directory=str(TEMPLATES_DIR)
+)
 
 # =========================================================
 # FUNCIONES AUXILIARES
 # =========================================================
 
 def usuario_autenticado(request: Request) -> bool:
-    """Comprueba si existe una sesión autenticada."""
     return bool(request.session.get("autenticado"))
 
 
 def obtener_conexion():
-    """Crea una conexión con la base de datos de Neon."""
     database_url = os.getenv("DATABASE_URL")
 
     if not database_url:
         raise RuntimeError(
-            "La variable DATABASE_URL no está configurada."
+            "DATABASE_URL no está configurada."
         )
 
     return psycopg.connect(database_url)
 
 
+def renderizar_pagina(
+    request: Request,
+    autenticado: bool = False,
+    usuario: str | None = None,
+    error: str | None = None,
+    status_code: int = 200,
+):
+    admin_session = None
+
+    if autenticado:
+        admin_session = {
+            "usuario": usuario or "Administrador",
+            "rol": "coordinador",
+        }
+
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={
+            "autenticado": autenticado,
+            "usuario": usuario,
+            "admin_session": admin_session,
+            "error": error,
+        },
+        status_code=status_code,
+    )
+
 # =========================================================
-# PÁGINA DE INICIO
+# PÁGINA PRINCIPAL
 # =========================================================
 
 @app.get("/", response_class=HTMLResponse)
@@ -83,16 +123,7 @@ async def inicio(request: Request):
             status_code=303
         )
 
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={
-            "autenticado": False,
-            "error": None,
-            "usuario": None,
-            "admin_session": None,
-        },
-    )
+    return renderizar_pagina(request)
 
 
 # =========================================================
@@ -105,23 +136,16 @@ async def iniciar_sesion(
     usuario: str = Form(...),
     contrasena: str = Form(...),
 ):
-
     admin_usuario = os.getenv("ADMIN_USER")
     admin_contrasena = os.getenv("ADMIN_PASSWORD")
 
     if not admin_usuario or not admin_contrasena:
-        return templates.TemplateResponse(
-            request=request,
-            name="index.html",
-            context={
-                "autenticado": False,
-                "error": (
-                    "Falta configurar el usuario o la "
-                    "contraseña en las variables de entorno."
-                ),
-                "usuario": None,
-                "admin_session": None,
-            },
+        return renderizar_pagina(
+            request,
+            error=(
+                "Falta configurar ADMIN_USER o "
+                "ADMIN_PASSWORD en las variables de entorno."
+            ),
             status_code=500,
         )
 
@@ -129,19 +153,12 @@ async def iniciar_sesion(
         usuario != admin_usuario
         or contrasena != admin_contrasena
     ):
-        return templates.TemplateResponse(
-            request=request,
-            name="index.html",
-            context={
-                "autenticado": False,
-                "error": "Usuario o contraseña incorrectos.",
-                "usuario": None,
-                "admin_session": None,
-            },
+        return renderizar_pagina(
+            request,
+            error="Usuario o contraseña incorrectos.",
             status_code=401,
         )
 
-    # Crear una sesión nueva después de validar las credenciales.
     request.session.clear()
     request.session["autenticado"] = True
     request.session["usuario"] = usuario
@@ -170,29 +187,20 @@ async def panel_admin(request: Request):
         "Administrador"
     )
 
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={
-            "autenticado": True,
-            "usuario": usuario_actual,
-            "admin_session": {
-                "usuario": usuario_actual,
-                "rol": "coordinador",
-            },
-            "error": None,
-        },
+    return renderizar_pagina(
+        request,
+        autenticado=True,
+        usuario=usuario_actual,
     )
 
 
 # =========================================================
-# CONSULTAR ESTUDIANTES DESDE NEON
+# ESTUDIANTES DESDE NEON
 # =========================================================
 
 @app.get("/api/admin/estudiantes")
 async def listar_estudiantes(request: Request):
 
-    # Verificar que el usuario haya iniciado sesión.
     if not usuario_autenticado(request):
         raise HTTPException(
             status_code=401,
@@ -205,14 +213,14 @@ async def listar_estudiantes(request: Request):
 
                 cursor.execute("""
                     SELECT
-    id,
-    documento,
-    nombre,
-    apellido,
-    grupo,
-    activo
-FROM estudiantes
-ORDER BY apellido, nombre
+                        id,
+                        documento,
+                        nombre,
+                        apellido,
+                        grupo,
+                        activo
+                    FROM estudiantes
+                    ORDER BY apellido, nombre
                 """)
 
                 filas = cursor.fetchall()
@@ -223,10 +231,10 @@ ORDER BY apellido, nombre
                         "documento": fila[1],
                         "nombre": fila[2],
                         "apellido": fila[3],
-                        "grado": fila[4],
-                        "grupo": fila[5],
-                        "es_beneficiario": fila[6],
-                        "activo": fila[7],
+                        "grupo": fila[4],
+                        "activo": fila[5],
+                        "grado": "",
+                        "es_beneficiario": False,
                     }
                     for fila in filas
                 ]
@@ -241,13 +249,18 @@ ORDER BY apellido, nombre
         raise
 
     except Exception:
-        # Evitar exponer credenciales o detalles internos.
+        # Registrar detalles en los logs del servidor,
+        # sin exponer credenciales al navegador.
+        import logging
+        logging.exception(
+            "Error consultando estudiantes en Neon."
+        )
+
         raise HTTPException(
             status_code=500,
             detail=(
                 "No fue posible consultar los estudiantes. "
-                "Verifica la conexión con Neon y las columnas "
-                "de la tabla estudiantes."
+                "Revisa los logs del servidor y la conexión con Neon."
             )
         )
 
