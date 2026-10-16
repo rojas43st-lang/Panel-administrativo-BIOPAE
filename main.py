@@ -201,16 +201,14 @@ async def listar_estudiantes(request: Request):
 
                 cursor.execute("""
                     SELECT
-                        id,
-                        documento,
-                        nombre,
-                        apellido,
-                        grado,
-                        grupo,
-                        es_beneficiario,
-                        activo
-                    FROM estudiantes
-                    ORDER BY apellido, nombre
+    id,
+    documento,
+    nombre,
+    apellido,
+    grupo,
+    activo
+FROM estudiantes
+ORDER BY apellido, nombre
                 """)
 
                 filas = cursor.fetchall()
