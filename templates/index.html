@@ -24,9 +24,7 @@
 
     <!-- ===================== INICIO DE SESIÓN ===================== -->
 
-    <div
-        id="view-login"
-        class="login-screen {% if autenticado %}hidden{% endif %}"
+   <div id="view-login" class="login-screen {% if autenticado %}hidden{% endif %}" {% if autenticado %}style="display:none"{% endif %}>
     >
         <div class="login-card">
 
