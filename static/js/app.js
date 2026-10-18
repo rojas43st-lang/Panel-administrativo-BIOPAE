@@ -410,6 +410,74 @@ document.addEventListener("DOMContentLoaded", () => {
         cargarSeccion();
     });
 
+async function mostrarControlDiario() {
+    mostrarEncabezado(
+        "Control diario",
+        "Consulta los cupos y las entregas registradas en BIOPAE."
+    );
+
+    contenido.insertAdjacentHTML("beforeend", `
+        <div class="admin-panel-card">
+            <p id="control-diario-mensaje">Cargando datos de Neon...</p>
+            <div id="control-diario-tabla"></div>
+        </div>
+    `);
+
+    const mensaje = document.getElementById("control-diario-mensaje");
+    const tabla = document.getElementById("control-diario-tabla");
+
+    try {
+        const respuesta = await fetch("/api/admin/control-diario", {
+            credentials: "same-origin"
+        });
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok || !datos.ok) {
+            throw new Error(
+                datos.detail || "No se pudo consultar el control diario."
+            );
+        }
+
+        const cupos = datos.cupos || [];
+
+        if (cupos.length === 0) {
+            mensaje.textContent = "No hay cupos diarios registrados.";
+            return;
+        }
+
+        mensaje.textContent = `${cupos.length} registros encontrados.`;
+
+        tabla.innerHTML = `
+            <div style="overflow-x:auto;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Alimento</th>
+                            <th>Cupos disponibles</th>
+                            <th>Cupos entregados</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${cupos.map(cupo => `
+                            <tr>
+                                <td>${cupo.fecha ?? "—"}</td>
+                                <td>${cupo.alimento ?? "Sin alimento"}</td>
+                                <td>${cupo.cantidad_disponible ?? 0}</td>
+                                <td>${cupo.cantidad_entregada ?? 0}</td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (error) {
+        mensaje.textContent = error.message;
+        console.error("Error en Control diario:", error);
+    }
+}
+
     mostrarPanelGeneral();
 
     console.log("BIOPAE: panel iniciado correctamente.");
