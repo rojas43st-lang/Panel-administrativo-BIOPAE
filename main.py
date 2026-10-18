@@ -379,6 +379,7 @@ async def cerrar_sesion(request: Request):
 # ESTADÍSTICAS DEL PANEL GENERAL
 # =========================================================
 
+
 @app.get("/api/admin/estadisticas")
 async def obtener_estadisticas(request: Request):
 
@@ -393,33 +394,35 @@ async def obtener_estadisticas(request: Request):
             with conexion.cursor() as cursor:
 
                 cursor.execute("""
-                    SELECT
-                        COUNT(*) FILTER (
-                            WHERE activo = TRUE
-                        ) AS estudiantes_activos
+                    SELECT COUNT(*)
                     FROM estudiantes
+                    WHERE activo = TRUE
                 """)
-
                 estudiantes_activos = cursor.fetchone()[0] or 0
 
                 cursor.execute("""
+                    SELECT MAX(fecha)
+                    FROM entregas
+                    WHERE LOWER(estado) = 'entregado'
+                """)
+                fecha_entregas = cursor.fetchone()[0]
+
+                cursor.execute("""
                     SELECT
-                        COUNT(*) AS entregas_hoy,
+                        COUNT(*),
                         COUNT(*) FILTER (
                             WHERE LOWER(a.nombre) LIKE '%leche%'
-                        ) AS vasos_leche,
+                        ),
                         COUNT(*) FILTER (
                             WHERE LOWER(a.nombre) LIKE '%almuerzo%'
-                        ) AS almuerzos
-                    FROM entregas en
-                    JOIN alimentos a
-                        ON a.id = en.alimento_id
-                    WHERE en.fecha = CURRENT_DATE
-                      AND LOWER(en.estado) = 'entregado'
-                """)
+                        )
+                    FROM entregas e
+                    JOIN alimentos a ON a.id = e.alimento_id
+                    WHERE e.fecha = %s
+                      AND LOWER(e.estado) = 'entregado'
+                """, (fecha_entregas,))
 
                 fila = cursor.fetchone()
-
                 entregas_hoy = fila[0] or 0
                 vasos_leche = fila[1] or 0
                 almuerzos = fila[2] or 0
@@ -431,7 +434,6 @@ async def obtener_estadisticas(request: Request):
                     FROM cupos_diarios
                     WHERE fecha = CURRENT_DATE
                 """)
-
                 cupos = cursor.fetchone()
 
         return {
@@ -441,7 +443,11 @@ async def obtener_estadisticas(request: Request):
             "vasos_leche": vasos_leche,
             "almuerzos": almuerzos,
             "cupos_disponibles": cupos[0],
-            "cupos_entregados": cupos[1]
+            "cupos_entregados": cupos[1],
+            "fecha_entregas": (
+                fecha_entregas.isoformat()
+                if fecha_entregas else None
+            )
         }
 
     except HTTPException:
@@ -451,7 +457,6 @@ async def obtener_estadisticas(request: Request):
         logging.exception(
             "Error consultando las estadísticas de BIOPAE."
         )
-
         raise HTTPException(
             status_code=500,
             detail="No fue posible consultar las estadísticas."
