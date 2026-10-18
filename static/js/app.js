@@ -137,112 +137,166 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* ==================== PANEL GENERAL ==================== */
 
-    async function mostrarPanelGeneral() {
-        mostrarEncabezado(
-            "Panel general",
-            "Resumen de los datos reales del Programa de Alimentación Escolar."
-        );
+    
+async function mostrarPanelGeneral() {
+    mostrarEncabezado(
+        "Panel general",
+        "Estado general de BIOPAE y resumen de las entregas registradas."
+    );
 
-        const tarjeta = document.createElement("div");
-        tarjeta.className = "admin-panel-card";
-        tarjeta.textContent = "Cargando estadísticas...";
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "dashboard-biopae";
+    tarjeta.innerHTML = `
+        <div class="dashboard-banner">
+            <span class="dashboard-banner-icon">🥛</span>
+            <p>
+                <strong>Programa de Alimentación Escolar</strong><br>
+                Consulta los indicadores de estudiantes, alimentos y cupos
+                registrados en BIOPAE.
+            </p>
+        </div>
 
-        contenido.appendChild(tarjeta);
+        <div class="dashboard-kpis">
+            <article class="dashboard-kpi">
+                <div class="dashboard-kpi-icon icon-green">👥</div>
+                <div>
+                    <p class="dashboard-kpi-label">Estudiantes activos</p>
+                    <strong class="dashboard-kpi-value" data-kpi="estudiantes">—</strong>
+                    <span class="dashboard-kpi-note">Estudiantes registrados como activos</span>
+                </div>
+            </article>
 
-        try {
-            const respuesta = await fetch(
-                "/api/admin/estadisticas",
-                {
-                    method: "GET",
-                    credentials: "same-origin",
-                    headers: {
-                        "Accept": "application/json"
-                    }
-                }
+            <article class="dashboard-kpi">
+                <div class="dashboard-kpi-icon icon-gold">📋</div>
+                <div>
+                    <p class="dashboard-kpi-label">Entregas registradas</p>
+                    <strong class="dashboard-kpi-value" data-kpi="entregas">—</strong>
+                    <span class="dashboard-kpi-note">Registros de entrega de alimentos</span>
+                </div>
+            </article>
+
+            <article class="dashboard-kpi">
+                <div class="dashboard-kpi-icon icon-green">🥛</div>
+                <div>
+                    <p class="dashboard-kpi-label">Vasos de leche</p>
+                    <strong class="dashboard-kpi-value" data-kpi="leche">—</strong>
+                    <span class="dashboard-kpi-note">Entregas registradas de leche</span>
+                </div>
+            </article>
+
+            <article class="dashboard-kpi">
+                <div class="dashboard-kpi-icon icon-gold">🍽️</div>
+                <div>
+                    <p class="dashboard-kpi-label">Almuerzos</p>
+                    <strong class="dashboard-kpi-value" data-kpi="almuerzos">—</strong>
+                    <span class="dashboard-kpi-note">Entregas registradas de almuerzo</span>
+                </div>
+            </article>
+        </div>
+
+        <div class="dashboard-lower">
+            <article class="dashboard-info-card">
+                <div class="dashboard-section-heading">
+                    <span>📦</span>
+                    <h2>Control de cupos</h2>
+                </div>
+                <p class="dashboard-description">
+                    Resumen de los cupos disponibles y entregados según los
+                    datos registrados en la base de datos.
+                </p>
+                <div class="dashboard-cupos">
+                    <div class="dashboard-cupo">
+                        <span class="dashboard-cupo-icon">🟢</span>
+                        <div>
+                            <span class="dashboard-cupo-label">Cupos disponibles</span>
+                            <strong data-kpi="disponibles">—</strong>
+                        </div>
+                    </div>
+                    <div class="dashboard-cupo">
+                        <span class="dashboard-cupo-icon">🟡</span>
+                        <div>
+                            <span class="dashboard-cupo-label">Cupos entregados</span>
+                            <strong data-kpi="entregados">—</strong>
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <article class="dashboard-info-card dashboard-note-card">
+                <div class="dashboard-section-heading">
+                    <span>ℹ️</span>
+                    <h2>Seguimiento del programa</h2>
+                </div>
+                <p class="dashboard-description">
+                    BIOPAE centraliza el registro de estudiantes y las entregas
+                    de alimentos para facilitar el seguimiento administrativo.
+                </p>
+                <div class="dashboard-note">
+                    <strong>Información actualizada</strong>
+                    <span>Las cifras se consultan desde la API de BIOPAE.</span>
+                </div>
+            </article>
+        </div>
+    `;
+
+    contenido.appendChild(tarjeta);
+
+    try {
+        const respuesta = await fetch("/api/admin/estadisticas", {
+            method: "GET",
+            credentials: "same-origin",
+            headers: {
+                "Accept": "application/json"
+            }
+        });
+
+        if (respuesta.status === 401) {
+            throw new Error(
+                "Tu sesión ha expirado. Inicia sesión nuevamente."
             );
+        }
 
-            if (respuesta.status === 401) {
-                throw new Error(
-                    "Tu sesión ha expirado. Inicia sesión nuevamente."
-                );
+        if (!respuesta.ok) {
+            throw new Error(`Error HTTP ${respuesta.status}`);
+        }
+
+        const datos = await respuesta.json();
+
+        if (!datos.ok) {
+            throw new Error("No se pudieron consultar las estadísticas.");
+        }
+
+        if (!tarjeta.isConnected) return;
+
+        const valores = {
+            estudiantes: datos.estudiantes_activos,
+            entregas: datos.entregas_hoy,
+            leche: datos.vasos_leche,
+            almuerzos: datos.almuerzos,
+            disponibles: datos.cupos_disponibles,
+            entregados: datos.cupos_entregados
+        };
+
+        Object.entries(valores).forEach(([clave, valor]) => {
+            const elemento = tarjeta.querySelector(`[data-kpi="${clave}"]`);
+            if (elemento) {
+                elemento.textContent = valor ?? 0;
             }
+        });
 
-            if (!respuesta.ok) {
-                throw new Error(`Error HTTP ${respuesta.status}`);
-            }
+    } catch (error) {
+        console.error("BIOPAE: error cargando estadísticas:", error);
 
-            const datos = await respuesta.json();
-
-            if (!datos.ok) {
-                throw new Error(
-                    "No se pudieron consultar las estadísticas."
-                );
-            }
-
-            if (!tarjeta.isConnected) return;
-
-            const estadisticas = [
-                {
-                    titulo: "Estudiantes activos",
-                    valor: datos.estudiantes_activos
-                },
-                {
-                    titulo: "Entregas registradas",
-                    valor: datos.entregas_hoy
-                },
-                {
-                    titulo: "Vasos de leche",
-                    valor: datos.vasos_leche
-                },
-                {
-                    titulo: "Almuerzos",
-                    valor: datos.almuerzos
-                },
-                {
-                    titulo: "Cupos disponibles",
-                    valor: datos.cupos_disponibles
-                },
-                {
-                    titulo: "Cupos entregados",
-                    valor: datos.cupos_entregados
-                }
-            ];
-
-            tarjeta.replaceChildren();
-
-            const contenedor = document.createElement("div");
-            contenedor.className = "estadisticas-grid";
-
-            estadisticas.forEach(item => {
-                const elemento = document.createElement("div");
-                elemento.className = "admin-panel-card";
-
-                const titulo = document.createElement("h3");
-                titulo.textContent = item.titulo;
-
-                const valor = document.createElement("p");
-                valor.className = "estadistica-valor";
-                valor.textContent = item.valor ?? 0;
-
-                elemento.append(titulo, valor);
-                contenedor.appendChild(elemento);
-            });
-
-            tarjeta.appendChild(contenedor);
-
-        } catch (error) {
-            console.error(
-                "BIOPAE: error cargando estadísticas:",
-                error
-            );
-
-            if (tarjeta.isConnected) {
-                tarjeta.textContent =
-                    error.message ||
-                    "No fue posible cargar las estadísticas.";
-            }
+        if (tarjeta.isConnected) {
+            const aviso = document.createElement("p");
+            aviso.className = "error-box";
+            aviso.textContent =
+                error.message || "No fue posible cargar las estadísticas.";
+            tarjeta.prepend(aviso);
         }
     }
+}
+
 
     /* ==================== ESTUDIANTES ==================== */
 
