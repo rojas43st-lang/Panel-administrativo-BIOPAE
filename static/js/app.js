@@ -138,14 +138,22 @@ document.addEventListener("DOMContentLoaded", () => {
     /* ==================== PANEL GENERAL ==================== */
 
     
+
 async function mostrarPanelGeneral() {
     mostrarEncabezado(
         "Panel general",
         "Estado general de BIOPAE y resumen de las entregas registradas."
     );
 
+    // Evitar que queden gráficas anteriores al volver al panel.
+    if (window.biopaeCharts) {
+        window.biopaeCharts.forEach(chart => chart.destroy());
+    }
+    window.biopaeCharts = [];
+
     const tarjeta = document.createElement("div");
     tarjeta.className = "dashboard-biopae";
+
     tarjeta.innerHTML = `
         <div class="dashboard-banner">
             <span class="dashboard-banner-icon">🥛</span>
@@ -171,7 +179,7 @@ async function mostrarPanelGeneral() {
                 <div>
                     <p class="dashboard-kpi-label">Entregas registradas</p>
                     <strong class="dashboard-kpi-value" data-kpi="entregas">—</strong>
-                    <span class="dashboard-kpi-note">Registros de entrega de alimentos</span>
+                    <span class="dashboard-kpi-note">Entregas de la última fecha registrada</span>
                 </div>
             </article>
 
@@ -180,7 +188,7 @@ async function mostrarPanelGeneral() {
                 <div>
                     <p class="dashboard-kpi-label">Vasos de leche</p>
                     <strong class="dashboard-kpi-value" data-kpi="leche">—</strong>
-                    <span class="dashboard-kpi-note">Entregas registradas de leche</span>
+                    <span class="dashboard-kpi-note">Entregas de leche en esa fecha</span>
                 </div>
             </article>
 
@@ -189,7 +197,7 @@ async function mostrarPanelGeneral() {
                 <div>
                     <p class="dashboard-kpi-label">Almuerzos</p>
                     <strong class="dashboard-kpi-value" data-kpi="almuerzos">—</strong>
-                    <span class="dashboard-kpi-note">Entregas registradas de almuerzo</span>
+                    <span class="dashboard-kpi-note">Almuerzos entregados en esa fecha</span>
                 </div>
             </article>
         </div>
@@ -201,8 +209,7 @@ async function mostrarPanelGeneral() {
                     <h2>Control de cupos</h2>
                 </div>
                 <p class="dashboard-description">
-                    Resumen de los cupos disponibles y entregados según los
-                    datos registrados en la base de datos.
+                    Resumen de los cupos del registro más reciente.
                 </p>
                 <div class="dashboard-cupos">
                     <div class="dashboard-cupo">
@@ -233,7 +240,48 @@ async function mostrarPanelGeneral() {
                 </p>
                 <div class="dashboard-note">
                     <strong>Información actualizada</strong>
-                    <span>Las cifras se consultan desde la API de BIOPAE.</span>
+                    <span>Los datos se consultan desde la API de BIOPAE.</span>
+                </div>
+            </article>
+        </div>
+
+        <div class="dashboard-charts">
+            <article class="dashboard-info-card dashboard-chart-card">
+                <div class="dashboard-section-heading">
+                    <span>📈</span>
+                    <h2>Historial de entregas</h2>
+                </div>
+                <p class="dashboard-description">
+                    Cantidad de entregas registradas por fecha.
+                </p>
+                <div class="dashboard-chart-container">
+                    <canvas id="graficaHistorial"></canvas>
+                </div>
+            </article>
+
+            <article class="dashboard-info-card dashboard-chart-card">
+                <div class="dashboard-section-heading">
+                    <span>📊</span>
+                    <h2>Entregas por alimento</h2>
+                </div>
+                <p class="dashboard-description">
+                    Comparación entre vasos de leche y almuerzos.
+                </p>
+                <div class="dashboard-chart-container">
+                    <canvas id="graficaAlimentos"></canvas>
+                </div>
+            </article>
+
+            <article class="dashboard-info-card dashboard-chart-card">
+                <div class="dashboard-section-heading">
+                    <span>🍽️</span>
+                    <h2>Distribución de alimentos</h2>
+                </div>
+                <p class="dashboard-description">
+                    Proporción de cada alimento entre las entregas registradas.
+                </p>
+                <div class="dashboard-chart-container dashboard-donut-container">
+                    <canvas id="graficaDistribucion"></canvas>
                 </div>
             </article>
         </div>
@@ -241,29 +289,40 @@ async function mostrarPanelGeneral() {
 
     contenido.appendChild(tarjeta);
 
+    // Cargar estadísticas y entregas de la base de datos.
     try {
-        const respuesta = await fetch("/api/admin/estadisticas", {
-            method: "GET",
-            credentials: "same-origin",
-            headers: {
-                "Accept": "application/json"
-            }
-        });
+        const [respuestaEstadisticas, respuestaEntregas] =
+            await Promise.all([
+                fetch("/api/admin/estadisticas", {
+                    credentials: "same-origin",
+                    headers: { "Accept": "application/json" }
+                }),
+                fetch("/api/admin/entregas", {
+                    credentials: "same-origin",
+                    headers: { "Accept": "application/json" }
+                })
+            ]);
 
-        if (respuesta.status === 401) {
+        if (
+            respuestaEstadisticas.status === 401 ||
+            respuestaEntregas.status === 401
+        ) {
             throw new Error(
                 "Tu sesión ha expirado. Inicia sesión nuevamente."
             );
         }
 
-        if (!respuesta.ok) {
-            throw new Error(`Error HTTP ${respuesta.status}`);
+        if (!respuestaEstadisticas.ok || !respuestaEntregas.ok) {
+            throw new Error(
+                "No fue posible consultar los datos del panel."
+            );
         }
 
-        const datos = await respuesta.json();
+        const datos = await respuestaEstadisticas.json();
+        const datosEntregas = await respuestaEntregas.json();
 
-        if (!datos.ok) {
-            throw new Error("No se pudieron consultar las estadísticas.");
+        if (!datos.ok || !datosEntregas.ok) {
+            throw new Error("La API no devolvió los datos esperados.");
         }
 
         if (!tarjeta.isConnected) return;
@@ -278,20 +337,197 @@ async function mostrarPanelGeneral() {
         };
 
         Object.entries(valores).forEach(([clave, valor]) => {
-            const elemento = tarjeta.querySelector(`[data-kpi="${clave}"]`);
+            const elemento = tarjeta.querySelector(
+                `[data-kpi="${clave}"]`
+            );
+
             if (elemento) {
                 elemento.textContent = valor ?? 0;
             }
         });
 
+        // Contar únicamente las entregas confirmadas.
+        const entregas = datosEntregas.entregas.filter(
+            entrega =>
+                String(entrega.estado || "").toLowerCase() === "entregado"
+        );
+
+        // Agrupar las entregas por fecha.
+        const porFecha = {};
+
+        entregas.forEach(entrega => {
+            if (!entrega.fecha) return;
+
+            porFecha[entrega.fecha] =
+                (porFecha[entrega.fecha] || 0) + 1;
+        });
+
+        const fechas = Object.keys(porFecha).sort();
+
+        const etiquetasFechas = fechas.map(fecha => {
+            const partes = fecha.split("-");
+            return partes.length === 3
+                ? `${partes[2]}/${partes[1]}`
+                : fecha;
+        });
+
+        // Clasificar los alimentos por su nombre.
+        let totalLeche = 0;
+        let totalAlmuerzos = 0;
+        let otrosAlimentos = 0;
+
+        entregas.forEach(entrega => {
+            const alimento = String(
+                entrega.alimento || ""
+            ).toLowerCase();
+
+            if (alimento.includes("leche")) {
+                totalLeche++;
+            } else if (alimento.includes("almuerzo")) {
+                totalAlmuerzos++;
+            } else {
+                otrosAlimentos++;
+            }
+        });
+
+        // Si Chart.js no está disponible, conservar las tarjetas.
+        if (typeof Chart === "undefined") {
+            throw new Error(
+                "No se pudo cargar Chart.js para mostrar las gráficas."
+            );
+        }
+
+        const opcionesComunes = {
+            responsive: true,
+            maintainAspectRatio: false
+        };
+
+        // 1. Historial de entregas.
+        window.biopaeCharts.push(
+            new Chart(
+                tarjeta.querySelector("#graficaHistorial"),
+                {
+                    type: "line",
+                    data: {
+                        labels: etiquetasFechas,
+                        datasets: [{
+                            label: "Entregas",
+                            data: fechas.map(fecha => porFecha[fecha]),
+                            borderColor: "#1F5D50",
+                            backgroundColor: "rgba(31, 93, 80, 0.12)",
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 4,
+                            pointBackgroundColor: "#1F5D50"
+                        }]
+                    },
+                    options: {
+                        ...opcionesComunes,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0 }
+                            }
+                        }
+                    }
+                }
+            )
+        );
+
+        // 2. Comparación de alimentos.
+        window.biopaeCharts.push(
+            new Chart(
+                tarjeta.querySelector("#graficaAlimentos"),
+                {
+                    type: "bar",
+                    data: {
+                        labels: ["Vasos de leche", "Almuerzos"],
+                        datasets: [{
+                            label: "Entregas",
+                            data: [totalLeche, totalAlmuerzos],
+                            backgroundColor: ["#1F5D50", "#E3A008"],
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        ...opcionesComunes,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0 }
+                            }
+                        }
+                    }
+                }
+            )
+        );
+
+        // 3. Distribución de alimentos.
+        const etiquetasDistribucion = [
+            "Vasos de leche",
+            "Almuerzos"
+        ];
+
+        const valoresDistribucion = [
+            totalLeche,
+            totalAlmuerzos
+        ];
+
+        if (otrosAlimentos > 0) {
+            etiquetasDistribucion.push("Otros alimentos");
+            valoresDistribucion.push(otrosAlimentos);
+        }
+
+        window.biopaeCharts.push(
+            new Chart(
+                tarjeta.querySelector("#graficaDistribucion"),
+                {
+                    type: "doughnut",
+                    data: {
+                        labels: etiquetasDistribucion,
+                        datasets: [{
+                            data: valoresDistribucion,
+                            backgroundColor: [
+                                "#1F5D50",
+                                "#E3A008",
+                                "#86B7A5"
+                            ],
+                            borderWidth: 2,
+                            borderColor: "#FFFFFF"
+                        }]
+                    },
+                    options: {
+                        ...opcionesComunes,
+                        cutout: "65%",
+                        plugins: {
+                            legend: {
+                                position: "bottom"
+                            }
+                        }
+                    }
+                }
+            )
+        );
+
     } catch (error) {
-        console.error("BIOPAE: error cargando estadísticas:", error);
+        console.error(
+            "BIOPAE: error cargando panel general:",
+            error
+        );
 
         if (tarjeta.isConnected) {
             const aviso = document.createElement("p");
             aviso.className = "error-box";
             aviso.textContent =
-                error.message || "No fue posible cargar las estadísticas.";
+                error.message ||
+                "No fue posible cargar los datos del panel.";
+
             tarjeta.prepend(aviso);
         }
     }
