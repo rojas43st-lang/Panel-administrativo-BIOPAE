@@ -153,6 +153,565 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+
+    async function mostrarHistorial() {
+        mostrarEncabezado(
+            "Historial de entregas",
+            "Registro de alimentos entregados, consultado desde Neon."
+        );
+
+        const contenedor = document.createElement("div");
+        contenedor.className = "admin-panel-card";
+
+        const estado = document.createElement("p");
+        estado.textContent = "Cargando historial de entregas...";
+
+        const tablaContenedor = document.createElement("div");
+        tablaContenedor.style.overflowX = "auto";
+
+        contenedor.append(estado, tablaContenedor);
+        contenido.appendChild(contenedor);
+
+        try {
+            const respuesta = await fetch("/api/admin/entregas", {
+                credentials: "same-origin",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            if (respuesta.status === 401) {
+                estado.textContent = "Tu sesión ha expirado. Inicia sesión nuevamente.";
+                return;
+            }
+
+            if (!respuesta.ok) {
+                throw new Error(`Error HTTP ${respuesta.status}`);
+            }
+
+            const datos = await respuesta.json();
+
+            if (!datos.ok || !Array.isArray(datos.entregas)) {
+                throw new Error("Respuesta inesperada de la API.");
+            }
+
+            // Evita mostrar datos si el usuario cambió de sección.
+            if (!contenedor.isConnected) return;
+
+            estado.textContent = `Total de entregas: ${datos.total}`;
+
+            if (datos.entregas.length === 0) {
+                tablaContenedor.textContent = "No hay entregas registradas.";
+                return;
+            }
+
+            const tabla = document.createElement("table");
+            tabla.className = "admin-table";
+
+            const encabezado = document.createElement("thead");
+            const filaEncabezado = document.createElement("tr");
+
+            [
+                "Fecha",
+                "Hora",
+                "Documento",
+                "Estudiante",
+                "Alimento",
+                "Tipo de entrega",
+                "Estado"
+            ].forEach(titulo => {
+                const th = document.createElement("th");
+                th.textContent = titulo;
+                filaEncabezado.appendChild(th);
+            });
+
+            encabezado.appendChild(filaEncabezado);
+            tabla.appendChild(encabezado);
+
+            const cuerpo = document.createElement("tbody");
+
+            datos.entregas.forEach(entrega => {
+                const fila = document.createElement("tr");
+
+                const valores = [
+                    entrega.fecha,
+                    entrega.hora,
+                    entrega.documento,
+                    `${entrega.nombre || ""} ${entrega.apellido || ""}`.trim(),
+                    entrega.alimento,
+                    entrega.tipo_entrega,
+                    entrega.estado
+                ];
+
+                valores.forEach(valor => {
+                    const td = document.createElement("td");
+                    td.textContent = valor ?? "—";
+                    fila.appendChild(td);
+                });
+
+                cuerpo.appendChild(fila);
+            });
+
+            tabla.appendChild(cuerpo);
+            tablaContenedor.replaceChildren(tabla);
+
+        } catch (error) {
+            console.error("Error consultando entregas:", error);
+
+            if (contenedor.isConnected) {
+                estado.textContent =
+                    "No fue posible cargar el historial de entregas.";
+            }
+        }
+    }
+
+    
+    async function mostrarHistorial() {
+        mostrarEncabezado(
+            "Historial de entregas",
+            "Registro de alimentos entregados, consultado desde Neon."
+        );
+
+        const contenedor = document.createElement("div");
+        contenedor.className = "admin-panel-card";
+
+        const estado = document.createElement("p");
+        estado.textContent = "Cargando historial de entregas...";
+
+        const tablaContenedor = document.createElement("div");
+        tablaContenedor.style.overflowX = "auto";
+
+        contenedor.append(estado, tablaContenedor);
+        contenido.appendChild(contenedor);
+
+        try {
+            const respuesta = await fetch("/api/admin/entregas", {
+                credentials: "same-origin",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            if (respuesta.status === 401) {
+                estado.textContent = "Tu sesión ha expirado. Inicia sesión nuevamente.";
+                return;
+            }
+
+            if (!respuesta.ok) {
+                throw new Error(`Error HTTP ${respuesta.status}`);
+            }
+
+            const datos = await respuesta.json();
+
+            if (!datos.ok || !Array.isArray(datos.entregas)) {
+                throw new Error("Respuesta inesperada de la API.");
+            }
+
+            // Evita mostrar datos si el usuario cambió de sección.
+            if (!contenedor.isConnected) return;
+
+            estado.textContent = `Total de entregas: ${datos.total}`;
+
+            if (datos.entregas.length === 0) {
+                tablaContenedor.textContent = "No hay entregas registradas.";
+                return;
+            }
+
+            const tabla = document.createElement("table");
+            tabla.className = "admin-table";
+
+            const encabezado = document.createElement("thead");
+            const filaEncabezado = document.createElement("tr");
+
+            [
+                "Fecha",
+                "Hora",
+                "Documento",
+                "Estudiante",
+                "Alimento",
+                "Tipo de entrega",
+                "Estado"
+            ].forEach(titulo => {
+                const th = document.createElement("th");
+                th.textContent = titulo;
+                filaEncabezado.appendChild(th);
+            });
+
+            encabezado.appendChild(filaEncabezado);
+            tabla.appendChild(encabezado);
+
+            const cuerpo = document.createElement("tbody");
+
+            datos.entregas.forEach(entrega => {
+                const fila = document.createElement("tr");
+
+                const valores = [
+                    entrega.fecha,
+                    entrega.hora,
+                    entrega.documento,
+                    `${entrega.nombre || ""} ${entrega.apellido || ""}`.trim(),
+                    entrega.alimento,
+                    entrega.tipo_entrega,
+                    entrega.estado
+                ];
+
+                valores.forEach(valor => {
+                    const td = document.createElement("td");
+                    td.textContent = valor ?? "—";
+                    fila.appendChild(td);
+                });
+
+                cuerpo.appendChild(fila);
+            });
+
+            tabla.appendChild(cuerpo);
+            tablaContenedor.replaceChildren(tabla);
+
+        } catch (error) {
+            console.error("Error consultando entregas:", error);
+
+            if (contenedor.isConnected) {
+                estado.textContent =
+                    "No fue posible cargar el historial de entregas.";
+            }
+        }
+    }
+
+    async function mostrarHistorial() {
+        mostrarEncabezado(
+            "Historial de entregas",
+            "Registro de alimentos entregados, consultado desde Neon."
+        );
+
+        const contenedor = document.createElement("div");
+        contenedor.className = "admin-panel-card";
+
+        const estado = document.createElement("p");
+        estado.textContent = "Cargando historial de entregas...";
+
+        const tablaContenedor = document.createElement("div");
+        tablaContenedor.style.overflowX = "auto";
+
+        contenedor.append(estado, tablaContenedor);
+        contenido.appendChild(contenedor);
+
+        try {
+            const respuesta = await fetch("/api/admin/entregas", {
+                credentials: "same-origin",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            if (respuesta.status === 401) {
+                estado.textContent = "Tu sesión ha expirado. Inicia sesión nuevamente.";
+                return;
+            }
+
+            if (!respuesta.ok) {
+                throw new Error(`Error HTTP ${respuesta.status}`);
+            }
+
+            const datos = await respuesta.json();
+
+            if (!datos.ok || !Array.isArray(datos.entregas)) {
+                throw new Error("Respuesta inesperada de la API.");
+            }
+
+            // Evita mostrar datos si el usuario cambió de sección.
+            if (!contenedor.isConnected) return;
+
+            estado.textContent = `Total de entregas: ${datos.total}`;
+
+            if (datos.entregas.length === 0) {
+                tablaContenedor.textContent = "No hay entregas registradas.";
+                return;
+            }
+
+            const tabla = document.createElement("table");
+            tabla.className = "admin-table";
+
+            const encabezado = document.createElement("thead");
+            const filaEncabezado = document.createElement("tr");
+
+            [
+                "Fecha",
+                "Hora",
+                "Documento",
+                "Estudiante",
+                "Alimento",
+                "Tipo de entrega",
+                "Estado"
+            ].forEach(titulo => {
+                const th = document.createElement("th");
+                th.textContent = titulo;
+                filaEncabezado.appendChild(th);
+            });
+
+            encabezado.appendChild(filaEncabezado);
+            tabla.appendChild(encabezado);
+
+            const cuerpo = document.createElement("tbody");
+
+            datos.entregas.forEach(entrega => {
+                const fila = document.createElement("tr");
+
+                const valores = [
+                    entrega.fecha,
+                    entrega.hora,
+                    entrega.documento,
+                    `${entrega.nombre || ""} ${entrega.apellido || ""}`.trim(),
+                    entrega.alimento,
+                    entrega.tipo_entrega,
+                    entrega.estado
+                ];
+
+                valores.forEach(valor => {
+                    const td = document.createElement("td");
+                    td.textContent = valor ?? "—";
+                    fila.appendChild(td);
+                });
+
+                cuerpo.appendChild(fila);
+            });
+
+            tabla.appendChild(cuerpo);
+            tablaContenedor.replaceChildren(tabla);
+
+        } catch (error) {
+            console.error("Error consultando entregas:", error);
+
+            if (contenedor.isConnected) {
+                estado.textContent =
+                    "No fue posible cargar el historial de entregas.";
+            }
+        }
+    }
+
+
+    async function mostrarHistorial() {
+        mostrarEncabezado(
+            "Historial de entregas",
+            "Registro de alimentos entregados, consultado desde Neon."
+        );
+
+        const contenedor = document.createElement("div");
+        contenedor.className = "admin-panel-card";
+
+        const estado = document.createElement("p");
+        estado.textContent = "Cargando historial de entregas...";
+
+        const tablaContenedor = document.createElement("div");
+        tablaContenedor.style.overflowX = "auto";
+
+        contenedor.append(estado, tablaContenedor);
+        contenido.appendChild(contenedor);
+
+        try {
+            const respuesta = await fetch("/api/admin/entregas", {
+                credentials: "same-origin",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            if (respuesta.status === 401) {
+                estado.textContent = "Tu sesión ha expirado. Inicia sesión nuevamente.";
+                return;
+            }
+
+            if (!respuesta.ok) {
+                throw new Error(`Error HTTP ${respuesta.status}`);
+            }
+
+            const datos = await respuesta.json();
+
+            if (!datos.ok || !Array.isArray(datos.entregas)) {
+                throw new Error("Respuesta inesperada de la API.");
+            }
+
+            // Evita mostrar datos si el usuario cambió de sección.
+            if (!contenedor.isConnected) return;
+
+            estado.textContent = `Total de entregas: ${datos.total}`;
+
+            if (datos.entregas.length === 0) {
+                tablaContenedor.textContent = "No hay entregas registradas.";
+                return;
+            }
+
+            const tabla = document.createElement("table");
+            tabla.className = "admin-table";
+
+            const encabezado = document.createElement("thead");
+            const filaEncabezado = document.createElement("tr");
+
+            [
+                "Fecha",
+                "Hora",
+                "Documento",
+                "Estudiante",
+                "Alimento",
+                "Tipo de entrega",
+                "Estado"
+            ].forEach(titulo => {
+                const th = document.createElement("th");
+                th.textContent = titulo;
+                filaEncabezado.appendChild(th);
+            });
+
+            encabezado.appendChild(filaEncabezado);
+            tabla.appendChild(encabezado);
+
+            const cuerpo = document.createElement("tbody");
+
+            datos.entregas.forEach(entrega => {
+                const fila = document.createElement("tr");
+
+                const valores = [
+                    entrega.fecha,
+                    entrega.hora,
+                    entrega.documento,
+                    `${entrega.nombre || ""} ${entrega.apellido || ""}`.trim(),
+                    entrega.alimento,
+                    entrega.tipo_entrega,
+                    entrega.estado
+                ];
+
+                valores.forEach(valor => {
+                    const td = document.createElement("td");
+                    td.textContent = valor ?? "—";
+                    fila.appendChild(td);
+                });
+
+                cuerpo.appendChild(fila);
+            });
+
+            tabla.appendChild(cuerpo);
+            tablaContenedor.replaceChildren(tabla);
+
+        } catch (error) {
+            console.error("Error consultando entregas:", error);
+
+            if (contenedor.isConnected) {
+                estado.textContent =
+                    "No fue posible cargar el historial de entregas.";
+            }
+        }
+    }
+
+    async function mostrarHistorial() {
+        mostrarEncabezado(
+            "Historial de entregas",
+            "Registro de alimentos entregados, consultado desde Neon."
+        );
+
+        const contenedor = document.createElement("div");
+        contenedor.className = "admin-panel-card";
+
+        const estado = document.createElement("p");
+        estado.textContent = "Cargando historial de entregas...";
+
+        const tablaContenedor = document.createElement("div");
+        tablaContenedor.style.overflowX = "auto";
+
+        contenedor.append(estado, tablaContenedor);
+        contenido.appendChild(contenedor);
+
+        try {
+            const respuesta = await fetch("/api/admin/entregas", {
+                credentials: "same-origin",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            if (respuesta.status === 401) {
+                estado.textContent = "Tu sesión ha expirado. Inicia sesión nuevamente.";
+                return;
+            }
+
+            if (!respuesta.ok) {
+                throw new Error(`Error HTTP ${respuesta.status}`);
+            }
+
+            const datos = await respuesta.json();
+
+            if (!datos.ok || !Array.isArray(datos.entregas)) {
+                throw new Error("Respuesta inesperada de la API.");
+            }
+
+            // Evita mostrar datos si el usuario cambió de sección.
+            if (!contenedor.isConnected) return;
+
+            estado.textContent = `Total de entregas: ${datos.total}`;
+
+            if (datos.entregas.length === 0) {
+                tablaContenedor.textContent = "No hay entregas registradas.";
+                return;
+            }
+
+            const tabla = document.createElement("table");
+            tabla.className = "admin-table";
+
+            const encabezado = document.createElement("thead");
+            const filaEncabezado = document.createElement("tr");
+
+            [
+                "Fecha",
+                "Hora",
+                "Documento",
+                "Estudiante",
+                "Alimento",
+                "Tipo de entrega",
+                "Estado"
+            ].forEach(titulo => {
+                const th = document.createElement("th");
+                th.textContent = titulo;
+                filaEncabezado.appendChild(th);
+            });
+
+            encabezado.appendChild(filaEncabezado);
+            tabla.appendChild(encabezado);
+
+            const cuerpo = document.createElement("tbody");
+
+            datos.entregas.forEach(entrega => {
+                const fila = document.createElement("tr");
+
+                const valores = [
+                    entrega.fecha,
+                    entrega.hora,
+                    entrega.documento,
+                    `${entrega.nombre || ""} ${entrega.apellido || ""}`.trim(),
+                    entrega.alimento,
+                    entrega.tipo_entrega,
+                    entrega.estado
+                ];
+
+                valores.forEach(valor => {
+                    const td = document.createElement("td");
+                    td.textContent = valor ?? "—";
+                    fila.appendChild(td);
+                });
+
+                cuerpo.appendChild(fila);
+            });
+
+            tabla.appendChild(cuerpo);
+            tablaContenedor.replaceChildren(tabla);
+
+        } catch (error) {
+            console.error("Error consultando entregas:", error);
+
+            if (contenedor.isConnected) {
+                estado.textContent =
+                    "No fue posible cargar el historial de entregas.";
+            }
+        }
+    }
+
+    
     const secciones = {
         dashboard: mostrarPanelGeneral,
         estudiantes: mostrarEstudiantes,
