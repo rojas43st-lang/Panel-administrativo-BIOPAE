@@ -482,7 +482,7 @@ document.addEventListener("DOMContentLoaded", () => {
         historial: mostrarHistorial,
         control: mostrarControlDiario,
 
-        casos: () => mostrarPendiente(
+        casos: mostrarCasosRevision,
             "Casos en revisión",
             "Esta sección se conectará con los registros correspondientes."
         ),
