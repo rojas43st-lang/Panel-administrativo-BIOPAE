@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
             datos.estudiantes.forEach(estudiante => {
                 const fila = document.createElement("tr");
 
-                const valores = [
+     const valores = [
     estudiante.documento,
     estudiante.nombre,
     estudiante.apellido,
@@ -133,7 +133,6 @@ document.addEventListener("DOMContentLoaded", () => {
     estudiante.beneficio || "No beneficiario",
     estudiante.activo ? "Activo" : "Inactivo"
 ];
-                ];
 
                 valores.forEach(valor => {
                     const td = document.createElement("td");
