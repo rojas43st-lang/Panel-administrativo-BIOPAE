@@ -517,3 +517,72 @@ async def obtener_control_diario(request: Request):
             status_code=500,
             detail="No fue posible consultar el control diario."
         )
+
+@app.get("/api/admin/casos-revision")
+async def obtener_casos_revision(request: Request):
+
+    if not usuario_autenticado(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Debes iniciar sesión."
+        )
+
+    try:
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+                cursor.execute("""
+                    SELECT
+                        e.id,
+                        e.fecha,
+                        e.hora,
+                        e.tipo_entrega,
+                        e.estado,
+                        e.observacion,
+                        es.documento,
+                        es.nombre,
+                        es.apellido,
+                        a.nombre AS alimento
+                    FROM entregas e
+                    LEFT JOIN estudiantes es
+                        ON es.id = e.estudiante_id
+                    LEFT JOIN alimentos a
+                        ON a.id = e.alimento_id
+                    WHERE LOWER(COALESCE(e.estado, ''))
+                              <> 'entregado'
+                       OR NULLIF(TRIM(e.observacion), '') IS NOT NULL
+                    ORDER BY e.fecha DESC, e.id DESC
+                """)
+
+                filas = cursor.fetchall()
+
+        return {
+            "ok": True,
+            "casos": [
+                {
+                    "id": fila[0],
+                    "fecha": fila[1].isoformat() if fila[1] else None,
+                    "hora": fila[2].isoformat() if fila[2] else None,
+                    "tipo_entrega": fila[3],
+                    "estado": fila[4],
+                    "observacion": fila[5],
+                    "documento": fila[6],
+                    "nombre": fila[7],
+                    "apellido": fila[8],
+                    "alimento": fila[9]
+                }
+                for fila in filas
+            ],
+            "total": len(filas)
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logging.exception(
+            "Error consultando los casos en revisión de BIOPAE."
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible consultar los casos en revisión."
+        )
