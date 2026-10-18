@@ -983,3 +983,301 @@
     }
 }
 
+
+/* =========================================
+   REPORTES BIOPAE
+   ========================================= */
+
+.reportes-page {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+}
+
+.reportes-encabezado {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-bottom: 4px;
+}
+
+.reportes-encabezado .page-header,
+.reportes-page .page-header {
+    margin-bottom: 0;
+}
+
+.reportes-encabezado h1 {
+    margin: 0 0 7px;
+    color: #174c40;
+    font-size: 32px;
+    font-weight: 750;
+}
+
+.reportes-encabezado p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.reportes-page .btn {
+    border-radius: 10px;
+    padding: 11px 16px;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.reportes-graficas,
+.reportes-indicadores {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.reportes-page .reporte-card {
+    min-width: 0;
+    padding: 22px;
+    background: #fff;
+    border: 1px solid #e1e7df;
+    border-radius: 17px;
+    box-shadow: 0 3px 12px rgba(25, 55, 43, .035);
+}
+
+.reportes-page .reporte-card h2 {
+    margin: 0 0 18px;
+    color: #263f36;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.reporte-chart {
+    position: relative;
+    height: 270px;
+    min-width: 0;
+}
+
+.reporte-leyenda {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin: 14px 0 0;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.reporte-leyenda span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.reporte-leyenda i {
+    display: inline-block;
+    width: 23px;
+    height: 11px;
+    border-radius: 2px;
+}
+
+.leyenda-beneficiario {
+    background: #205f50;
+}
+
+.leyenda-redistribuido {
+    background: #e6a000;
+}
+
+.reporte-tasa {
+    margin: 20px 0;
+}
+
+.reporte-tasa-titulo {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 7px;
+    color: #475569;
+    font-size: 14px;
+}
+
+.reporte-tasa-titulo strong {
+    font-weight: 600;
+}
+
+.reporte-barra {
+    height: 13px;
+    overflow: hidden;
+    background: #edf0e7;
+    border-radius: 20px;
+}
+
+.reporte-barra > div {
+    width: 0;
+    height: 100%;
+    background: #205f50;
+    border-radius: inherit;
+    transition: width .3s ease;
+}
+
+.reporte-barra-dorada > div {
+    background: #e6a000;
+}
+
+.reporte-nota {
+    margin: 22px 0 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.reporte-indicador {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 21px;
+    min-width: 0;
+    background: #fff;
+    border: 1px solid #e1e7df;
+    border-radius: 17px;
+}
+
+.reporte-indicador-icono {
+    display: grid;
+    place-items: center;
+    flex: 0 0 52px;
+    height: 52px;
+    border-radius: 13px;
+    font-size: 23px;
+}
+
+.reporte-indicador-icono.verde {
+    background: #dfede7;
+}
+
+.reporte-indicador-icono.dorado {
+    background: #fff0d9;
+}
+
+.reporte-indicador strong {
+    display: block;
+    color: #173f35;
+    font-size: 28px;
+    line-height: 1.2;
+}
+
+.reporte-indicador p {
+    margin: 3px 0;
+    color: #52645e;
+    font-size: 14px;
+}
+
+.reporte-indicador span {
+    color: #87928c;
+    font-size: 12px;
+}
+
+.reportes-resumen .reporte-card {
+    padding: 22px;
+}
+
+.reporte-resumen-filas {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 15px;
+}
+
+.reporte-resumen-filas > div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 15px;
+    background: #f6f8f5;
+    border-radius: 10px;
+}
+
+.reporte-resumen-filas span {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.reporte-resumen-filas strong {
+    color: #174c40;
+    font-size: 25px;
+}
+
+.reportes-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+#mensaje-reportes {
+    color: #a52a2a;
+    font-size: 14px;
+}
+
+@media (max-width: 900px) {
+    .reportes-graficas,
+    .reportes-indicadores {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .reportes-encabezado h1 {
+        font-size: 27px;
+    }
+
+    .reportes-page .reporte-card {
+        padding: 17px;
+    }
+
+    .reporte-chart {
+        height: 230px;
+    }
+
+    .reporte-resumen-filas {
+        grid-template-columns: 1fr;
+    }
+
+    .reporte-indicador {
+        padding: 16px;
+    }
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #page-content,
+    #page-content * {
+        visibility: visible;
+    }
+
+    #page-content {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        padding: 0;
+    }
+
+    .reportes-acciones,
+    #btn-exportar-pdf {
+        display: none !important;
+    }
+
+    .reportes-page .reporte-card,
+    .reporte-indicador {
+        break-inside: avoid;
+        box-shadow: none;
+    }
+
+    .reportes-graficas,
+    .reportes-indicadores {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
