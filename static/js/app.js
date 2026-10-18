@@ -40,6 +40,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }).format(new Date());
     }
 
+    /* ==================== FUNCIONES GENERALES ==================== */
+
     function mostrarEncabezado(titulo, descripcion) {
         contenido.innerHTML = "";
 
@@ -121,7 +123,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const datos = await respuesta.json();
 
-        if (!datos.ok || !Array.isArray(datos[claveLista])) {
+        if (
+            !datos.ok ||
+            !Array.isArray(datos[claveLista])
+        ) {
             throw new Error(
                 "La respuesta de la API no tiene el formato esperado."
             );
@@ -145,13 +150,16 @@ document.addEventListener("DOMContentLoaded", () => {
         contenido.appendChild(tarjeta);
 
         try {
-            const respuesta = await fetch("/api/admin/estadisticas", {
-                method: "GET",
-                credentials: "same-origin",
-                headers: {
-                    "Accept": "application/json"
+            const respuesta = await fetch(
+                "/api/admin/estadisticas",
+                {
+                    method: "GET",
+                    credentials: "same-origin",
+                    headers: {
+                        "Accept": "application/json"
+                    }
                 }
-            });
+            );
 
             if (respuesta.status === 401) {
                 throw new Error(
@@ -458,81 +466,83 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    
-async function mostrarCasosRevision() {
-    mostrarEncabezado(
-        "Casos en revisión",
-        "Entregas con estados pendientes o con observaciones registradas."
-    );
+    /* ==================== CASOS EN REVISIÓN ==================== */
 
-    const tarjeta = document.createElement("div");
-    tarjeta.className = "admin-panel-card";
-
-    const estado = document.createElement("p");
-    estado.textContent = "Consultando casos en Neon...";
-
-    const tablaContenedor = document.createElement("div");
-    tablaContenedor.style.overflowX = "auto";
-
-    tarjeta.append(estado, tablaContenedor);
-    contenido.appendChild(tarjeta);
-
-    try {
-        const datos = await obtenerJSON(
-            "/api/admin/casos-revision",
-            "casos"
+    async function mostrarCasosRevision() {
+        mostrarEncabezado(
+            "Casos en revisión",
+            "Entregas con estados pendientes o con observaciones registradas."
         );
 
-        if (!tarjeta.isConnected) return;
+        const tarjeta = document.createElement("div");
+        tarjeta.className = "admin-panel-card";
 
-        estado.textContent = `Total de casos encontrados: ${datos.total}`;
+        const estado = document.createElement("p");
+        estado.textContent = "Consultando casos en Neon...";
 
-        if (datos.casos.length === 0) {
+        const tablaContenedor = document.createElement("div");
+        tablaContenedor.style.overflowX = "auto";
+
+        tarjeta.append(estado, tablaContenedor);
+        contenido.appendChild(tarjeta);
+
+        try {
+            const datos = await obtenerJSON(
+                "/api/admin/casos-revision",
+                "casos"
+            );
+
+            if (!tarjeta.isConnected) return;
+
+            if (datos.casos.length === 0) {
+                estado.textContent =
+                    "No hay casos en revisión registrados actualmente.";
+                return;
+            }
+
             estado.textContent =
-                "No hay casos en revisión registrados actualmente.";
-            return;
-        }
+                `Total de casos encontrados: ${datos.total}`;
 
-        const filas = datos.casos.map(caso => [
-            caso.fecha,
-            caso.hora,
-            caso.documento,
-            `${caso.nombre || ""} ${caso.apellido || ""}`.trim(),
-            caso.alimento,
-            caso.tipo_entrega,
-            caso.estado,
-            caso.observacion
-        ]);
+            const filas = datos.casos.map(caso => [
+                caso.fecha,
+                caso.hora,
+                caso.documento,
+                `${caso.nombre || ""} ${caso.apellido || ""}`.trim(),
+                caso.alimento,
+                caso.tipo_entrega,
+                caso.estado,
+                caso.observacion
+            ]);
 
-        tablaContenedor.replaceChildren(
-            crearTabla(
-                [
-                    "Fecha",
-                    "Hora",
-                    "Documento",
-                    "Estudiante",
-                    "Alimento",
-                    "Tipo de entrega",
-                    "Estado",
-                    "Observación"
-                ],
-                filas
-            )
-        );
+            tablaContenedor.replaceChildren(
+                crearTabla(
+                    [
+                        "Fecha",
+                        "Hora",
+                        "Documento",
+                        "Estudiante",
+                        "Alimento",
+                        "Tipo de entrega",
+                        "Estado",
+                        "Observación"
+                    ],
+                    filas
+                )
+            );
 
-    } catch (error) {
-        console.error(
-            "BIOPAE: error cargando casos en revisión:",
-            error
-        );
+        } catch (error) {
+            console.error(
+                "BIOPAE: error cargando casos en revisión:",
+                error
+            );
 
-        if (tarjeta.isConnected) {
-            estado.textContent =
-                error.message ||
-                "No fue posible cargar los casos en revisión.";
+            if (tarjeta.isConnected) {
+                estado.textContent =
+                    error.message ||
+                    "No fue posible cargar los casos en revisión.";
+            }
         }
     }
-}
 
     /* ==================== SECCIONES PENDIENTES ==================== */
 
@@ -552,16 +562,41 @@ async function mostrarCasosRevision() {
 
     /* ==================== NAVEGACIÓN ==================== */
 
-   
-const secciones = {
-    dashboard: mostrarPanelGeneral,
-    estudiantes: mostrarEstudiantes,
-    historial: mostrarHistorial,
-    control: mostrarControlDiario,
-    casos: mostrarCasosRevision,
+    const secciones = {
+        dashboard: mostrarPanelGeneral,
+        estudiantes: mostrarEstudiantes,
+        historial: mostrarHistorial,
+        control: mostrarControlDiario,
+        casos: mostrarCasosRevision,
 
-    reportes: () => mostrarPendiente(
-        "Reportes",
-        "Esta sección se conectará con los datos reales de BIOPAE."
-    )
-};
+        reportes: () => mostrarPendiente(
+            "Reportes",
+            "Esta sección se conectará con los datos reales de BIOPAE."
+        )
+    };
+
+    menu.addEventListener("click", event => {
+        const boton = event.target.closest("[data-page]");
+
+        if (!boton) return;
+
+        const cargarSeccion = secciones[boton.dataset.page];
+
+        if (!cargarSeccion) return;
+
+        menu.querySelectorAll("[data-page]").forEach(elemento => {
+            elemento.classList.toggle(
+                "active",
+                elemento === boton
+            );
+        });
+
+        cargarSeccion();
+    });
+
+    /* ==================== INICIALIZACIÓN ==================== */
+
+    mostrarPanelGeneral();
+
+    console.log("BIOPAE: panel iniciado correctamente.");
+});
