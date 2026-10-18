@@ -427,14 +427,17 @@ async def obtener_estadisticas(request: Request):
                 vasos_leche = fila[1] or 0
                 almuerzos = fila[2] or 0
 
-                cursor.execute("""
-                    SELECT
-                        COALESCE(SUM(cantidad_disponible), 0),
-                        COALESCE(SUM(cantidad_entregada), 0)
-                    FROM cupos_diarios
-                    WHERE fecha = CURRENT_DATE
-                """)
-                cupos = cursor.fetchone()
+              cursor.execute("""
+    SELECT
+        COALESCE(SUM(cantidad_disponible), 0),
+        COALESCE(SUM(cantidad_entregada), 0)
+    FROM cupos_diarios
+    WHERE fecha = (
+        SELECT MAX(fecha)
+        FROM cupos_diarios
+    )
+""")
+cupos = cursor.fetchone()
 
         return {
             "ok": True,
