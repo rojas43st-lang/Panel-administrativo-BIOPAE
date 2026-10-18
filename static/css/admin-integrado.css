@@ -406,3 +406,109 @@
         min-width: 650px;
     }
 }
+
+/* ===== Integración visual con el HTML actual de BIOPAE ===== */
+
+/* Estructura principal */
+.admin-shell .main-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-shell .sidebar-bottom {
+    margin-top: auto;
+}
+
+.admin-shell .logout-button {
+    width: 100%;
+}
+
+/* Contenido de las secciones */
+#page-content {
+    min-width: 0;
+}
+
+#page-content .page-header {
+    margin-bottom: 24px;
+}
+
+#page-content .page-header h1 {
+    margin: 0 0 8px;
+    color: #14403a;
+}
+
+#page-content .page-header p {
+    margin: 0;
+    color: #5b6b67;
+    line-height: 1.6;
+}
+
+/* Tablas generadas por app.js */
+.admin-panel-card {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.admin-panel-card > div {
+    min-width: 0;
+}
+
+.admin-panel-card .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.admin-panel-card .admin-table th,
+.admin-panel-card .admin-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border, #e1e4db);
+    text-align: left;
+    vertical-align: top;
+}
+
+.admin-panel-card .admin-table th {
+    background: #eff1e8;
+    color: #52645d;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.admin-panel-card .admin-table tbody tr:hover {
+    background: #f7f9f5;
+}
+
+/* Mensajes de carga y errores */
+#page-content .error-box {
+    margin: 12px 0;
+}
+
+#page-content p {
+    overflow-wrap: anywhere;
+}
+
+/* Formularios y tablas en pantallas pequeñas */
+@media (max-width: 800px) {
+    .admin-shell .main-content {
+        width: 100%;
+    }
+
+    .admin-shell .sidebar-bottom {
+        padding: 12px;
+    }
+
+    #page-content {
+        padding: 16px;
+    }
+
+    .admin-panel-card {
+        overflow-x: auto;
+    }
+
+    .admin-panel-card .admin-table {
+        min-width: 650px;
+    }
+}
+
