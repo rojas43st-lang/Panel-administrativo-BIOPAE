@@ -1631,15 +1631,18 @@ function irAPagina(pagina) {
 }
 
 
-/* Inicializar la navegación del panel */
+/* Inicializar la navegación de BIOPAE */
 
-const enlaces = document.querySelectorAll("[data-pagina]");
+const enlaces = document.querySelectorAll(
+    "#nav-menu [data-page], #nav-menu [data-pagina]"
+);
 
 enlaces.forEach(enlace => {
     enlace.addEventListener("click", evento => {
         evento.preventDefault();
 
-        const pagina = enlace.dataset.pagina;
+        const pagina =
+            enlace.dataset.page || enlace.dataset.pagina;
 
         if (pagina) {
             irAPagina(pagina);
@@ -1647,6 +1650,8 @@ enlaces.forEach(enlace => {
     });
 });
 
+// Mostrar la página inicial
+irAPagina("dashboard");
     // Mostrar el panel general al iniciar la sesión
 irAPagina("dashboard");
 });
