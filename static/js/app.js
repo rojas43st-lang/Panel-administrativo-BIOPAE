@@ -1,3 +1,4 @@
+
 document.addEventListener("DOMContentLoaded", () => {
     const login = document.getElementById("view-login");
     const app = document.getElementById("view-app");
@@ -23,8 +24,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const usuario = document.getElementById("sidebar-usuario");
     const rol = document.getElementById("sidebar-rol");
 
-    if (usuario) usuario.textContent = sesion.usuario || "Administrador";
-    if (rol) rol.textContent = sesion.rol || "Coordinador";
+    if (usuario) {
+        usuario.textContent = sesion.usuario || "Administrador";
+    }
+
+    if (rol) {
+        rol.textContent = sesion.rol || "Coordinador";
+    }
 
     const fecha = document.getElementById("topbar-fecha");
 
@@ -94,103 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return tabla;
     }
 
-  async function mostrarPanelGeneral() {
-    mostrarEncabezado(
-        "Panel general",
-        "Resumen de los datos reales del Programa de Alimentación Escolar."
-    );
-
-    const tarjeta = document.createElement("div");
-    tarjeta.className = "admin-panel-card";
-    tarjeta.innerHTML = "<p>Cargando estadísticas...</p>";
-
-    contenido.appendChild(tarjeta);
-
-    try {
-        const respuesta = await fetch("/api/admin/estadisticas", {
-            method: "GET",
-            credentials: "same-origin",
-            headers: {
-                "Accept": "application/json"
-            }
-        });
-
-        if (respuesta.status === 401) {
-            throw new Error("Tu sesión ha expirado. Inicia sesión nuevamente.");
-        }
-
-        if (!respuesta.ok) {
-            throw new Error(`Error HTTP ${respuesta.status}`);
-        }
-
-        const datos = await respuesta.json();
-
-        if (!datos.ok) {
-            throw new Error("No se pudieron consultar las estadísticas.");
-        }
-
-        if (!tarjeta.isConnected) return;
-
-        const estadisticas = [
-            {
-                titulo: "Estudiantes activos",
-                valor: datos.estudiantes_activos
-            },
-            {
-                titulo: "Entregas de hoy",
-                valor: datos.entregas_hoy
-            },
-            {
-                titulo: "Vasos de leche",
-                valor: datos.vasos_leche
-            },
-            {
-                titulo: "Almuerzos",
-                valor: datos.almuerzos
-            },
-            {
-                titulo: "Cupos disponibles",
-                valor: datos.cupos_disponibles
-            },
-            {
-                titulo: "Cupos entregados",
-                valor: datos.cupos_entregados
-            }
-        ];
-
-        tarjeta.replaceChildren();
-
-        const contenedor = document.createElement("div");
-        contenedor.className = "estadisticas-grid";
-
-        estadisticas.forEach(item => {
-            const elemento = document.createElement("div");
-            elemento.className = "admin-panel-card";
-
-            const titulo = document.createElement("h3");
-            titulo.textContent = item.titulo;
-
-            const valor = document.createElement("p");
-            valor.className = "estadistica-valor";
-            valor.textContent = item.valor ?? 0;
-
-            elemento.append(titulo, valor);
-            contenedor.appendChild(elemento);
-        });
-
-        tarjeta.appendChild(contenedor);
-
-    } catch (error) {
-        console.error("BIOPAE: error cargando estadísticas:", error);
-
-        if (tarjeta.isConnected) {
-            tarjeta.textContent =
-                error.message || "No fue posible cargar las estadísticas.";
-        }
-    }
-}
-
-
     async function obtenerJSON(url, claveLista) {
         const respuesta = await fetch(url, {
             method: "GET",
@@ -221,6 +130,114 @@ document.addEventListener("DOMContentLoaded", () => {
         return datos;
     }
 
+    /* ==================== PANEL GENERAL ==================== */
+
+    async function mostrarPanelGeneral() {
+        mostrarEncabezado(
+            "Panel general",
+            "Resumen de los datos reales del Programa de Alimentación Escolar."
+        );
+
+        const tarjeta = document.createElement("div");
+        tarjeta.className = "admin-panel-card";
+        tarjeta.textContent = "Cargando estadísticas...";
+
+        contenido.appendChild(tarjeta);
+
+        try {
+            const respuesta = await fetch("/api/admin/estadisticas", {
+                method: "GET",
+                credentials: "same-origin",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            if (respuesta.status === 401) {
+                throw new Error(
+                    "Tu sesión ha expirado. Inicia sesión nuevamente."
+                );
+            }
+
+            if (!respuesta.ok) {
+                throw new Error(`Error HTTP ${respuesta.status}`);
+            }
+
+            const datos = await respuesta.json();
+
+            if (!datos.ok) {
+                throw new Error(
+                    "No se pudieron consultar las estadísticas."
+                );
+            }
+
+            if (!tarjeta.isConnected) return;
+
+            const estadisticas = [
+                {
+                    titulo: "Estudiantes activos",
+                    valor: datos.estudiantes_activos
+                },
+                {
+                    titulo: "Entregas registradas",
+                    valor: datos.entregas_hoy
+                },
+                {
+                    titulo: "Vasos de leche",
+                    valor: datos.vasos_leche
+                },
+                {
+                    titulo: "Almuerzos",
+                    valor: datos.almuerzos
+                },
+                {
+                    titulo: "Cupos disponibles",
+                    valor: datos.cupos_disponibles
+                },
+                {
+                    titulo: "Cupos entregados",
+                    valor: datos.cupos_entregados
+                }
+            ];
+
+            tarjeta.replaceChildren();
+
+            const contenedor = document.createElement("div");
+            contenedor.className = "estadisticas-grid";
+
+            estadisticas.forEach(item => {
+                const elemento = document.createElement("div");
+                elemento.className = "admin-panel-card";
+
+                const titulo = document.createElement("h3");
+                titulo.textContent = item.titulo;
+
+                const valor = document.createElement("p");
+                valor.className = "estadistica-valor";
+                valor.textContent = item.valor ?? 0;
+
+                elemento.append(titulo, valor);
+                contenedor.appendChild(elemento);
+            });
+
+            tarjeta.appendChild(contenedor);
+
+        } catch (error) {
+            console.error(
+                "BIOPAE: error cargando estadísticas:",
+                error
+            );
+
+            if (tarjeta.isConnected) {
+                tarjeta.textContent =
+                    error.message ||
+                    "No fue posible cargar las estadísticas.";
+            }
+        }
+    }
+
+    /* ==================== ESTUDIANTES ==================== */
+
     async function mostrarEstudiantes() {
         mostrarEncabezado(
             "Estudiantes",
@@ -247,7 +264,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!tarjeta.isConnected) return;
 
-            estado.textContent = `Total de estudiantes: ${datos.total}`;
+            estado.textContent =
+                `Total de estudiantes: ${datos.total}`;
 
             if (datos.estudiantes.length === 0) {
                 tablaContenedor.textContent =
@@ -277,6 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     filas
                 )
             );
+
         } catch (error) {
             console.error(
                 "BIOPAE: error cargando estudiantes:",
@@ -290,6 +309,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     }
+
+    /* ==================== HISTORIAL DE ENTREGAS ==================== */
 
     async function mostrarHistorial() {
         mostrarEncabezado(
@@ -317,7 +338,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!tarjeta.isConnected) return;
 
-            estado.textContent = `Total de entregas: ${datos.total}`;
+            estado.textContent =
+                `Total de entregas: ${datos.total}`;
 
             if (datos.entregas.length === 0) {
                 tablaContenedor.textContent =
@@ -349,6 +371,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     filas
                 )
             );
+
         } catch (error) {
             console.error(
                 "BIOPAE: error cargando historial:",
@@ -363,25 +386,101 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    /* ==================== CONTROL DIARIO ==================== */
+
+    async function mostrarControlDiario() {
+        mostrarEncabezado(
+            "Control diario",
+            "Consulta los cupos registrados de vasos de leche y almuerzos."
+        );
+
+        const tarjeta = document.createElement("div");
+        tarjeta.className = "admin-panel-card";
+
+        const estado = document.createElement("p");
+        estado.textContent = "Cargando datos de Neon...";
+
+        const tablaContenedor = document.createElement("div");
+        tablaContenedor.style.overflowX = "auto";
+
+        tarjeta.append(estado, tablaContenedor);
+        contenido.appendChild(tarjeta);
+
+        try {
+            const datos = await obtenerJSON(
+                "/api/admin/control-diario",
+                "cupos"
+            );
+
+            if (!tarjeta.isConnected) return;
+
+            const cupos = datos.cupos;
+
+            if (cupos.length === 0) {
+                estado.textContent =
+                    "No hay cupos diarios registrados.";
+                return;
+            }
+
+            estado.textContent =
+                `${cupos.length} registros encontrados en Neon.`;
+
+            const filas = cupos.map(cupo => [
+                cupo.fecha,
+                cupo.alimento,
+                cupo.cantidad_disponible,
+                cupo.cantidad_entregada
+            ]);
+
+            tablaContenedor.replaceChildren(
+                crearTabla(
+                    [
+                        "Fecha",
+                        "Alimento",
+                        "Cupos disponibles",
+                        "Cupos entregados"
+                    ],
+                    filas
+                )
+            );
+
+        } catch (error) {
+            console.error(
+                "BIOPAE: error cargando Control diario:",
+                error
+            );
+
+            if (tarjeta.isConnected) {
+                estado.textContent =
+                    error.message ||
+                    "No fue posible cargar el control diario.";
+            }
+        }
+    }
+
+    /* ==================== SECCIONES PENDIENTES ==================== */
+
     function mostrarPendiente(titulo, descripcion) {
         mostrarEncabezado(titulo, descripcion);
 
-        contenido.insertAdjacentHTML("beforeend", `
-            <div class="admin-panel-card">
-                <p>Esta sección todavía no está conectada a los datos de Neon.</p>
-            </div>
-        `);
+        const tarjeta = document.createElement("div");
+        tarjeta.className = "admin-panel-card";
+
+        const mensaje = document.createElement("p");
+        mensaje.textContent =
+            "Esta sección todavía no está conectada a los datos de Neon.";
+
+        tarjeta.appendChild(mensaje);
+        contenido.appendChild(tarjeta);
     }
+
+    /* ==================== NAVEGACIÓN ==================== */
 
     const secciones = {
         dashboard: mostrarPanelGeneral,
         estudiantes: mostrarEstudiantes,
         historial: mostrarHistorial,
-
         control: mostrarControlDiario,
-            "Control diario",
-            "Esta sección se conectará con los cupos y entregas del día."
-        ),
 
         casos: () => mostrarPendiente(
             "Casos en revisión",
@@ -404,79 +503,16 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!cargarSeccion) return;
 
         menu.querySelectorAll("[data-page]").forEach(elemento => {
-            elemento.classList.toggle("active", elemento === boton);
+            elemento.classList.toggle(
+                "active",
+                elemento === boton
+            );
         });
 
         cargarSeccion();
     });
 
-async function mostrarControlDiario() {
-    mostrarEncabezado(
-        "Control diario",
-        "Consulta los cupos y las entregas registradas en BIOPAE."
-    );
-
-    contenido.insertAdjacentHTML("beforeend", `
-        <div class="admin-panel-card">
-            <p id="control-diario-mensaje">Cargando datos de Neon...</p>
-            <div id="control-diario-tabla"></div>
-        </div>
-    `);
-
-    const mensaje = document.getElementById("control-diario-mensaje");
-    const tabla = document.getElementById("control-diario-tabla");
-
-    try {
-        const respuesta = await fetch("/api/admin/control-diario", {
-            credentials: "same-origin"
-        });
-
-        const datos = await respuesta.json();
-
-        if (!respuesta.ok || !datos.ok) {
-            throw new Error(
-                datos.detail || "No se pudo consultar el control diario."
-            );
-        }
-
-        const cupos = datos.cupos || [];
-
-        if (cupos.length === 0) {
-            mensaje.textContent = "No hay cupos diarios registrados.";
-            return;
-        }
-
-        mensaje.textContent = `${cupos.length} registros encontrados.`;
-
-        tabla.innerHTML = `
-            <div style="overflow-x:auto;">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Alimento</th>
-                            <th>Cupos disponibles</th>
-                            <th>Cupos entregados</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${cupos.map(cupo => `
-                            <tr>
-                                <td>${cupo.fecha ?? "—"}</td>
-                                <td>${cupo.alimento ?? "Sin alimento"}</td>
-                                <td>${cupo.cantidad_disponible ?? 0}</td>
-                                <td>${cupo.cantidad_entregada ?? 0}</td>
-                            </tr>
-                        `).join("")}
-                    </tbody>
-                </table>
-            </div>
-        `;
-    } catch (error) {
-        mensaje.textContent = error.message;
-        console.error("Error en Control diario:", error);
-    }
-}
+    /* ==================== INICIALIZACIÓN ==================== */
 
     mostrarPanelGeneral();
 
