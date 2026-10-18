@@ -1631,20 +1631,20 @@ function irAPagina(pagina) {
 }
 
 
-/* Inicializar el panel cuando se carga la página */
+/* Inicializar la navegación del panel */
 
-document.addEventListener("DOMContentLoaded", () => {
-  const enlaces = document.querySelectorAll("[data-pagina]");
+const enlaces = document.querySelectorAll("[data-pagina]");
 
-  enlaces.forEach(enlace => {
+enlaces.forEach(enlace => {
     enlace.addEventListener("click", evento => {
-      evento.preventDefault();
+        evento.preventDefault();
 
-      const pagina = enlace.dataset.pagina;
+        const pagina = enlace.dataset.pagina;
 
-      if (pagina) {
-        irAPagina(pagina);
-      }
+        if (pagina) {
+            irAPagina(pagina);
+        }
     });
-  });
+});
+
 });
