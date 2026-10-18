@@ -1430,112 +1430,305 @@ async function registrarCasoManual(evento) {
    REPORTES
    ========================================================= */
 
+
 async function mostrarReportes() {
-  const contenedor = document.getElementById("page-content");
+    const contenedor = document.getElementById("page-content");
+    if (!contenedor) return;
 
-  if (!contenedor) return;
+    // Liberar gráficas de una visita anterior
+    if (window.biopaeCharts) {
+        window.biopaeCharts.forEach(chart => chart.destroy());
+    }
+    window.biopaeCharts = [];
 
-  contenedor.innerHTML = `
-    <div class="page-header">
-      <h1>Reportes</h1>
-      <p>Consulta y exporta la información registrada en BIOPAE.</p>
-    </div>
+    contenedor.innerHTML = `
+        <div class="reportes-page">
+            <div class="reportes-encabezado">
+                <div>
+                    <h1>Reportes</h1>
+                    <p id="reportes-periodo">Preparando resumen...</p>
+                </div>
+                <button class="btn btn-primary" id="btn-exportar-pdf">
+                    ↓ Exportar informe (PDF)
+                </button>
+            </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <h3>Total de estudiantes</h3>
-        <p id="reporte-estudiantes">...</p>
-      </div>
+            <div class="reportes-graficas">
+                <article class="reporte-card">
+                    <h2>Entregas por programa y tipo</h2>
+                    <div class="reporte-chart">
+                        <canvas id="reporte-grafica-entregas"></canvas>
+                    </div>
+                    <p class="reporte-leyenda">
+                        <span><i class="leyenda-beneficiario"></i> Beneficiario</span>
+                        <span><i class="leyenda-redistribuido"></i> Redistribuido</span>
+                    </p>
+                </article>
 
-      <div class="stat-card">
-        <h3>Entregas registradas</h3>
-        <p id="reporte-entregas">...</p>
-      </div>
+                <article class="reporte-card">
+                    <h2>Tasa de reclamo (%)</h2>
 
-      <div class="stat-card">
-        <h3>Casos pendientes</h3>
-        <p id="reporte-casos">...</p>
-      </div>
-    </div>
+                    <div class="reporte-tasa">
+                        <div class="reporte-tasa-titulo">
+                            <span>Vaso de leche</span>
+                            <strong id="tasa-leche">—</strong>
+                        </div>
+                        <div class="reporte-barra">
+                            <div id="barra-leche"></div>
+                        </div>
+                    </div>
 
-    <div class="report-actions">
-      <button class="btn btn-primary" id="btn-exportar-estudiantes">
-        Exportar estudiantes CSV
-      </button>
+                    <div class="reporte-tasa">
+                        <div class="reporte-tasa-titulo">
+                            <span>Almuerzo</span>
+                            <strong id="tasa-almuerzo">—</strong>
+                        </div>
+                        <div class="reporte-barra reporte-barra-dorada">
+                            <div id="barra-almuerzo"></div>
+                        </div>
+                    </div>
 
-      <button class="btn btn-secondary" id="btn-exportar-entregas">
-        Exportar entregas CSV
-      </button>
-    </div>
+                    <p class="reporte-nota">
+                        La tasa se mostrará cuando estén disponibles los datos
+                        de beneficiarios que podían reclamar cada alimento.
+                    </p>
+                </article>
+            </div>
 
-    <p id="mensaje-reportes"></p>
-  `;
+            <div class="reportes-indicadores">
+                <article class="reporte-indicador">
+                    <div class="reporte-indicador-icono verde">🔄</div>
+                    <div>
+                        <strong id="reporte-leche-redistribuida">—</strong>
+                        <p>Vasos de leche redistribuidos</p>
+                        <span>En el periodo seleccionado</span>
+                    </div>
+                </article>
 
-  try {
-    const [resEstudiantes, resEntregas, resCasos] = await Promise.all([
-      fetch("/api/admin/estudiantes", {
-        credentials: "same-origin"
-      }),
-      fetch("/api/admin/entregas", {
-        credentials: "same-origin"
-      }),
-      fetch("/api/admin/casos-revision", {
-        credentials: "same-origin"
-      })
-    ]);
+                <article class="reporte-indicador">
+                    <div class="reporte-indicador-icono dorado">🔄</div>
+                    <div>
+                        <strong id="reporte-almuerzo-redistribuido">—</strong>
+                        <p>Almuerzos redistribuidos</p>
+                        <span>En el periodo seleccionado</span>
+                    </div>
+                </article>
+            </div>
 
-    if (!resEstudiantes.ok || !resEntregas.ok || !resCasos.ok) {
-      throw new Error("No fue posible consultar todos los reportes.");
+            <div class="reportes-resumen">
+                <article class="reporte-card">
+                    <h2>Resumen general</h2>
+                    <div class="reporte-resumen-filas">
+                        <div><span>Estudiantes registrados</span><strong id="reporte-estudiantes">—</strong></div>
+                        <div><span>Entregas del periodo</span><strong id="reporte-entregas">—</strong></div>
+                        <div><span>Casos pendientes</span><strong id="reporte-casos">—</strong></div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="reportes-acciones">
+                <button class="btn btn-primary" id="btn-exportar-estudiantes">
+                    Exportar estudiantes CSV
+                </button>
+                <button class="btn btn-secondary" id="btn-exportar-entregas">
+                    Exportar entregas CSV
+                </button>
+            </div>
+
+            <p id="mensaje-reportes" role="status"></p>
+        </div>
+    `;
+
+    // Últimos 14 días hábiles, incluyendo hoy si es día hábil
+    const fechasPeriodo = [];
+    const cursor = new Date();
+    cursor.setHours(12, 0, 0, 0);
+
+    while (fechasPeriodo.length < 14) {
+        const dia = cursor.getDay();
+
+        if (dia !== 0 && dia !== 6) {
+            fechasPeriodo.push([
+                cursor.getFullYear(),
+                String(cursor.getMonth() + 1).padStart(2, "0"),
+                String(cursor.getDate()).padStart(2, "0")
+            ].join("-"));
+        }
+
+        cursor.setDate(cursor.getDate() - 1);
     }
 
-    const estudiantesJSON = await resEstudiantes.json();
-    const entregasJSON = await resEntregas.json();
-    const casosJSON = await resCasos.json();
+    const fechaInicio = fechasPeriodo[fechasPeriodo.length - 1];
+    const fechaFin = fechasPeriodo[0];
+    const fechasValidas = new Set(fechasPeriodo);
 
-    const estudiantes = Array.isArray(estudiantesJSON)
-      ? estudiantesJSON
-      : (estudiantesJSON.estudiantes || []);
+    document.getElementById("reportes-periodo").textContent =
+        `Últimos 14 días hábiles (${fechaInicio} a ${fechaFin}).`;
 
-    const entregas = Array.isArray(entregasJSON)
-      ? entregasJSON
-      : (entregasJSON.entregas || []);
+    document.getElementById("btn-exportar-pdf").addEventListener("click", () => {
+        window.print();
+    });
 
-    const casos = Array.isArray(casosJSON)
-      ? casosJSON
-      : (casosJSON.casos || []);
+    try {
+        const [resEstudiantes, resEntregas, resCasos] = await Promise.all([
+            fetch("/api/admin/estudiantes", {
+                credentials: "same-origin",
+                headers: { Accept: "application/json" }
+            }),
+            fetch("/api/admin/entregas", {
+                credentials: "same-origin",
+                headers: { Accept: "application/json" }
+            }),
+            fetch("/api/admin/casos-revision", {
+                credentials: "same-origin",
+                headers: { Accept: "application/json" }
+            })
+        ]);
 
-    document.getElementById("reporte-estudiantes").textContent =
-      estudiantes.length;
+        if (!resEstudiantes.ok || !resEntregas.ok || !resCasos.ok) {
+            throw new Error("No fue posible consultar todos los reportes.");
+        }
 
-    document.getElementById("reporte-entregas").textContent =
-      entregas.length;
+        const [estudiantesJSON, entregasJSON, casosJSON] = await Promise.all([
+            resEstudiantes.json(),
+            resEntregas.json(),
+            resCasos.json()
+        ]);
 
-    document.getElementById("reporte-casos").textContent =
-      casos.filter(caso => caso.estado === "pendiente").length;
+        const estudiantes = Array.isArray(estudiantesJSON)
+            ? estudiantesJSON
+            : (estudiantesJSON.estudiantes || []);
 
-    document.getElementById("btn-exportar-estudiantes")
-      .addEventListener("click", () => {
-        exportarCSV(
-          estudiantes,
-          "reporte_estudiantes.csv"
+        const todasLasEntregas = Array.isArray(entregasJSON)
+            ? entregasJSON
+            : (entregasJSON.entregas || []);
+
+        const casos = Array.isArray(casosJSON)
+            ? casosJSON
+            : (casosJSON.casos || []);
+
+        const normalizar = valor => String(valor ?? "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
+
+        const entregas = todasLasEntregas.filter(entrega =>
+            fechasValidas.has(String(entrega.fecha ?? "").slice(0, 10)) &&
+            normalizar(entrega.estado) === "entregado"
         );
-      });
 
-    document.getElementById("btn-exportar-entregas")
-      .addEventListener("click", () => {
-        exportarCSV(
-          entregas,
-          "reporte_entregas.csv"
-        );
-      });
+        const esRedistribuida = entrega => {
+            const tipo = normalizar(entrega.tipo_entrega);
+            return tipo.includes("redistrib");
+        };
 
-  } catch (error) {
-    console.error("Error al generar los reportes:", error);
+        const esLeche = entrega =>
+            normalizar(entrega.alimento).includes("leche");
 
-    document.getElementById("mensaje-reportes").textContent =
-      `Error al cargar los reportes: ${error.message}`;
-  }
+        const esAlmuerzo = entrega =>
+            normalizar(entrega.alimento).includes("almuerzo");
+
+        const lecheBeneficiario = entregas.filter(e =>
+            esLeche(e) && !esRedistribuida(e)
+        ).length;
+
+        const lecheRedistribuida = entregas.filter(e =>
+            esLeche(e) && esRedistribuida(e)
+        ).length;
+
+        const almuerzoBeneficiario = entregas.filter(e =>
+            esAlmuerzo(e) && !esRedistribuida(e)
+        ).length;
+
+        const almuerzoRedistribuido = entregas.filter(e =>
+            esAlmuerzo(e) && esRedistribuida(e)
+        ).length;
+
+        document.getElementById("reporte-estudiantes").textContent =
+            estudiantes.length;
+
+        document.getElementById("reporte-entregas").textContent =
+            entregas.length;
+
+        document.getElementById("reporte-casos").textContent =
+            casos.filter(caso =>
+                normalizar(caso.estado) === "pendiente"
+            ).length;
+
+        document.getElementById("reporte-leche-redistribuida").textContent =
+            lecheRedistribuida;
+
+        document.getElementById("reporte-almuerzo-redistribuido").textContent =
+            almuerzoRedistribuido;
+
+        // No inventar tasas si no conocemos el denominador.
+        document.getElementById("tasa-leche").textContent = "No disponible";
+        document.getElementById("tasa-almuerzo").textContent = "No disponible";
+
+        document.getElementById("btn-exportar-estudiantes")
+            .addEventListener("click", () => {
+                exportarCSV(estudiantes, "reporte_estudiantes.csv");
+            });
+
+        document.getElementById("btn-exportar-entregas")
+            .addEventListener("click", () => {
+                exportarCSV(entregas, "reporte_entregas.csv");
+            });
+
+        if (typeof Chart === "undefined") {
+            throw new Error("No se ha cargado Chart.js.");
+        }
+
+        const canvas = document.getElementById("reporte-grafica-entregas");
+
+        window.biopaeCharts.push(new Chart(canvas, {
+            type: "bar",
+            data: {
+                labels: ["Vaso de leche", "Almuerzo"],
+                datasets: [
+                    {
+                        label: "Beneficiario",
+                        data: [lecheBeneficiario, almuerzoBeneficiario],
+                        backgroundColor: "#205f50",
+                        stack: "entregas"
+                    },
+                    {
+                        label: "Redistribuido",
+                        data: [lecheRedistribuida, almuerzoRedistribuido],
+                        backgroundColor: "#e6a000",
+                        stack: "entregas"
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { stacked: true },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
+                }
+            }
+        }));
+
+    } catch (error) {
+        console.error("Error al generar los reportes:", error);
+
+        const mensaje = document.getElementById("mensaje-reportes");
+        if (mensaje) {
+            mensaje.textContent =
+                `Error al cargar los reportes: ${error.message}`;
+        }
+    }
 }
+
 
 
 /* Exportar datos a CSV */
