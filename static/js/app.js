@@ -1563,9 +1563,7 @@ async function mostrarReportes() {
     const fechasValidas = new Set(fechasPeriodo);
 
     document.getElementById("reportes-periodo").textContent =
-    fechasConDatos.length
-        ? `Últimas ${fechasConDatos.length} fechas con entregas registradas (${fechasConDatos[fechasConDatos.length - 1]} a ${fechasConDatos[0]}).`
-        : "No hay entregas registradas para mostrar.";
+    `Entregas registradas: últimas fechas disponibles`;
 
     document.getElementById("btn-exportar-pdf").addEventListener("click", () => {
         window.print();
