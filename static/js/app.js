@@ -1563,7 +1563,9 @@ async function mostrarReportes() {
     const fechasValidas = new Set(fechasPeriodo);
 
     document.getElementById("reportes-periodo").textContent =
-        `Últimos 14 días hábiles (${fechaInicio} a ${fechaFin}).`;
+    fechasConDatos.length
+        ? `Últimas ${fechasConDatos.length} fechas con entregas registradas (${fechasConDatos[fechasConDatos.length - 1]} a ${fechasConDatos[0]}).`
+        : "No hay entregas registradas para mostrar.";
 
     document.getElementById("btn-exportar-pdf").addEventListener("click", () => {
         window.print();
@@ -1613,11 +1615,30 @@ async function mostrarReportes() {
             .toLowerCase()
             .trim();
 
-        const entregas = todasLasEntregas.filter(entrega =>
-            fechasValidas.has(String(entrega.fecha ?? "").slice(0, 10)) &&
-            normalizar(entrega.estado) === "entregado"
-        );
+       // Tomar las entregas confirmadas y ordenarlas por fecha.
+// Así el informe puede mostrar registros aunque sean anteriores
+// a los últimos 14 días hábiles del calendario actual.
+const entregasConfirmadas = todasLasEntregas
+    .filter(entrega =>
+        normalizar(entrega.estado) === "entregado"
+    )
+    .sort((a, b) =>
+        String(b.fecha ?? "").localeCompare(String(a.fecha ?? ""))
+    );
 
+const fechasConDatos = [
+    ...new Set(
+        entregasConfirmadas.map(entrega =>
+            String(entrega.fecha ?? "").slice(0, 10)
+        )
+    )
+].filter(Boolean).slice(0, 14);
+
+const fechasInforme = new Set(fechasConDatos);
+
+const entregas = entregasConfirmadas.filter(entrega =>
+    fechasInforme.has(String(entrega.fecha ?? "").slice(0, 10))
+);
         const esRedistribuida = entrega => {
             const tipo = normalizar(entrega.tipo_entrega);
             return tipo.includes("redistrib");
