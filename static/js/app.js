@@ -126,11 +126,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 const fila = document.createElement("tr");
 
                 const valores = [
-                    estudiante.documento,
-                    estudiante.nombre,
-                    estudiante.apellido,
-                    estudiante.grupo,
-                    estudiante.activo ? "Activo" : "Inactivo"
+    estudiante.documento,
+    estudiante.nombre,
+    estudiante.apellido,
+    estudiante.grupo,
+    estudiante.beneficio || "No beneficiario",
+    estudiante.activo ? "Activo" : "Inactivo"
+];
                 ];
 
                 valores.forEach(valor => {
