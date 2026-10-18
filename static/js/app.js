@@ -546,19 +546,164 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* ==================== SECCIONES PENDIENTES ==================== */
 
-    function mostrarPendiente(titulo, descripcion) {
-        mostrarEncabezado(titulo, descripcion);
+    
+async function mostrarReportes() {
+    mostrarEncabezado(
+        "Reportes",
+        "Resumen de las entregas registradas en BIOPAE."
+    );
 
-        const tarjeta = document.createElement("div");
-        tarjeta.className = "admin-panel-card";
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "admin-panel-card";
+    tarjeta.textContent = "Cargando reportes desde Neon...";
+    contenido.appendChild(tarjeta);
 
-        const mensaje = document.createElement("p");
-        mensaje.textContent =
-            "Esta sección todavía no está conectada a los datos de Neon.";
+    try {
+        const datos = await obtenerJSON("/api/admin/entregas");
 
-        tarjeta.appendChild(mensaje);
-        contenido.appendChild(tarjeta);
+        if (!datos.ok || !Array.isArray(datos.entregas)) {
+            throw new Error("No se pudieron obtener las entregas.");
+        }
+
+        const entregas = datos.entregas;
+
+        const normalizar = texto =>
+            String(texto || "")
+                .trim()
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "");
+
+        const leche = entregas.filter(e =>
+            normalizar(e.alimento).includes("leche")
+        ).length;
+
+        const almuerzos = entregas.filter(e =>
+            normalizar(e.alimento).includes("almuerzo")
+        ).length;
+
+        const entregadas = entregas.filter(e =>
+            normalizar(e.estado) === "entregado"
+        ).length;
+
+        const pendientes = entregas.length - entregadas;
+
+        tarjeta.replaceChildren();
+
+        const titulo = document.createElement("h2");
+        titulo.textContent = "Resumen general";
+        tarjeta.appendChild(titulo);
+
+        const tabla = document.createElement("table");
+        tabla.className = "admin-table";
+
+        const filas = [
+            ["Total de entregas registradas", entregas.length],
+            ["Vasos de leche", leche],
+            ["Almuerzos", almuerzos],
+            ["Entregas completadas", entregadas],
+            ["Entregas con otro estado", pendientes]
+        ];
+
+        const cuerpo = document.createElement("tbody");
+
+        filas.forEach(([nombre, cantidad]) => {
+            const fila = document.createElement("tr");
+            const celdaNombre = document.createElement("td");
+            const celdaCantidad = document.createElement("td");
+
+            celdaNombre.textContent = nombre;
+            celdaCantidad.textContent = cantidad;
+
+            fila.append(celdaNombre, celdaCantidad);
+            cuerpo.appendChild(fila);
+        });
+
+        tabla.appendChild(cuerpo);
+        tarjeta.appendChild(tabla);
+
+        const subtitulo = document.createElement("h2");
+        subtitulo.textContent = "Entregas por fecha";
+        subtitulo.style.marginTop = "24px";
+        tarjeta.appendChild(subtitulo);
+
+        const porFecha = {};
+
+        entregas.forEach(entrega => {
+            const fecha = entrega.fecha || "Sin fecha";
+
+            if (!porFecha[fecha]) {
+                porFecha[fecha] = {
+                    leche: 0,
+                    almuerzos: 0,
+                    total: 0
+                };
+            }
+
+            porFecha[fecha].total++;
+
+            if (normalizar(entrega.alimento).includes("leche")) {
+                porFecha[fecha].leche++;
+            } else if (
+                normalizar(entrega.alimento).includes("almuerzo")
+            ) {
+                porFecha[fecha].almuerzos++;
+            }
+        });
+
+        const tablaFechas = document.createElement("table");
+        tablaFechas.className = "admin-table";
+
+        const encabezado = document.createElement("thead");
+        const filaEncabezado = document.createElement("tr");
+
+        ["Fecha", "Vasos de leche", "Almuerzos", "Total"].forEach(texto => {
+            const celda = document.createElement("th");
+            celda.textContent = texto;
+            filaEncabezado.appendChild(celda);
+        });
+
+        encabezado.appendChild(filaEncabezado);
+        tablaFechas.appendChild(encabezado);
+
+        const cuerpoFechas = document.createElement("tbody");
+
+        Object.entries(porFecha)
+            .sort(([fechaA], [fechaB]) => fechaB.localeCompare(fechaA))
+            .forEach(([fecha, cantidades]) => {
+                const fila = document.createElement("tr");
+
+                [
+                    fecha,
+                    cantidades.leche,
+                    cantidades.almuerzos,
+                    cantidades.total
+                ].forEach(valor => {
+                    const celda = document.createElement("td");
+                    celda.textContent = valor;
+                    fila.appendChild(celda);
+                });
+
+                cuerpoFechas.appendChild(fila);
+            });
+
+        tablaFechas.appendChild(cuerpoFechas);
+        tarjeta.appendChild(tablaFechas);
+
+        if (entregas.length === 0) {
+            const mensaje = document.createElement("p");
+            mensaje.textContent =
+                "Todavía no hay entregas registradas en Neon.";
+            tarjeta.appendChild(mensaje);
+        }
+
+    } catch (error) {
+        console.error("Error cargando reportes:", error);
+        tarjeta.textContent =
+            "No fue posible cargar los reportes. Verifica tu sesión e inténtalo de nuevo.";
     }
+}
+
 
     /* ==================== NAVEGACIÓN ==================== */
 
@@ -569,7 +714,7 @@ document.addEventListener("DOMContentLoaded", () => {
         control: mostrarControlDiario,
         casos: mostrarCasosRevision,
 
-        reportes: () => mostrarPendiente(
+        reportes: mostrarReportes
             "Reportes",
             "Esta sección se conectará con los datos reales de BIOPAE."
         )
