@@ -94,10 +94,101 @@ document.addEventListener("DOMContentLoaded", () => {
         return tabla;
     }
 
-    function mostrarPanelGeneral() {
-        mostrarEncabezado(
-            "Panel general",
-            "Panel administrativo del Programa de Alimentación Escolar."
+  async function mostrarPanelGeneral() {
+    mostrarEncabezado(
+        "Panel general",
+        "Resumen de los datos reales del Programa de Alimentación Escolar."
+    );
+
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "admin-panel-card";
+    tarjeta.innerHTML = "<p>Cargando estadísticas...</p>";
+
+    contenido.appendChild(tarjeta);
+
+    try {
+        const respuesta = await fetch("/api/admin/estadisticas", {
+            method: "GET",
+            credentials: "same-origin",
+            headers: {
+                "Accept": "application/json"
+            }
+        });
+
+        if (respuesta.status === 401) {
+            throw new Error("Tu sesión ha expirado. Inicia sesión nuevamente.");
+        }
+
+        if (!respuesta.ok) {
+            throw new Error(`Error HTTP ${respuesta.status}`);
+        }
+
+        const datos = await respuesta.json();
+
+        if (!datos.ok) {
+            throw new Error("No se pudieron consultar las estadísticas.");
+        }
+
+        if (!tarjeta.isConnected) return;
+
+        const estadisticas = [
+            {
+                titulo: "Estudiantes activos",
+                valor: datos.estudiantes_activos
+            },
+            {
+                titulo: "Entregas de hoy",
+                valor: datos.entregas_hoy
+            },
+            {
+                titulo: "Vasos de leche",
+                valor: datos.vasos_leche
+            },
+            {
+                titulo: "Almuerzos",
+                valor: datos.almuerzos
+            },
+            {
+                titulo: "Cupos disponibles",
+                valor: datos.cupos_disponibles
+            },
+            {
+                titulo: "Cupos entregados",
+                valor: datos.cupos_entregados
+            }
+        ];
+
+        tarjeta.replaceChildren();
+
+        const contenedor = document.createElement("div");
+        contenedor.className = "estadisticas-grid";
+
+        estadisticas.forEach(item => {
+            const elemento = document.createElement("div");
+            elemento.className = "admin-panel-card";
+
+            const titulo = document.createElement("h3");
+            titulo.textContent = item.titulo;
+
+            const valor = document.createElement("p");
+            valor.className = "estadistica-valor";
+            valor.textContent = item.valor ?? 0;
+
+            elemento.append(titulo, valor);
+            contenedor.appendChild(elemento);
+        });
+
+        tarjeta.appendChild(contenedor);
+
+    } catch (error) {
+        console.error("BIOPAE: error cargando estadísticas:", error);
+
+        if (tarjeta.isConnected) {
+            tarjeta.textContent =
+                error.message || "No fue posible cargar las estadísticas.";
+        }
+    }
+}
         );
 
         contenido.insertAdjacentHTML("beforeend", `
