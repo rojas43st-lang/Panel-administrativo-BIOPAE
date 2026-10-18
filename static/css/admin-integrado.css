@@ -266,3 +266,143 @@
         height: 240px;
     }
 }
+
+
+/* ===== Corrección visual de formularios BIOPAE ===== */
+
+.admin-panel-card {
+    color: var(--text-primary, #24332f);
+    line-height: 1.6;
+}
+
+.admin-panel-card h2 {
+    color: #14403a;
+    margin-top: 0;
+}
+
+.admin-panel-card p {
+    line-height: 1.6;
+}
+
+.admin-filter {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    align-items: end;
+}
+
+.admin-filter > div {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+}
+
+.admin-filter label {
+    color: #344740;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.admin-filter input,
+.admin-filter select {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #d8ded5;
+    border-radius: 9px;
+    background: #fff;
+    color: #24332f;
+    font: inherit;
+    font-size: 14px;
+}
+
+.admin-filter input:focus,
+.admin-filter select:focus {
+    outline: 2px solid #a9cec0;
+    outline-offset: 1px;
+    border-color: #1f5d50;
+}
+
+.admin-filter button,
+#btn-registrar-entrega {
+    min-height: 44px;
+    padding: 11px 18px;
+    border: 0;
+    border-radius: 9px;
+    background: #1f5d50;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s ease;
+}
+
+.admin-filter button:hover,
+#btn-registrar-entrega:hover {
+    background: #14403a;
+}
+
+.admin-filter button:disabled,
+#btn-registrar-entrega:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+#mensaje-entrega {
+    margin: 16px 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+#estado-control {
+    color: #5b6b67;
+    font-size: 14px;
+}
+
+.admin-panel-card hr {
+    margin: 24px 0;
+    border: 0;
+    border-top: 1px solid #e1e4db;
+}
+
+.admin-panel-card .admin-table,
+.admin-panel-card table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-panel-card .admin-table th,
+.admin-panel-card .admin-table td {
+    padding: 13px 12px;
+    border-bottom: 1px solid #e1e4db;
+    text-align: left;
+}
+
+.admin-panel-card .admin-table th {
+    background: #eff1e8;
+    color: #52645d;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.admin-panel-card .admin-table tbody tr:hover {
+    background: #f7f9f5;
+}
+
+@media (max-width: 700px) {
+    .admin-filter {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-panel-card {
+        padding: 16px;
+    }
+
+    .admin-panel-card .admin-table {
+        min-width: 650px;
+    }
+}
