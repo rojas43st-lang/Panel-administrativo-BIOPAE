@@ -707,18 +707,18 @@ async function mostrarReportes() {
 
     /* ==================== NAVEGACIÓN ==================== */
 
-    const secciones = {
-        dashboard: mostrarPanelGeneral,
-        estudiantes: mostrarEstudiantes,
-        historial: mostrarHistorial,
-        control: mostrarControlDiario,
-        casos: mostrarCasosRevision,
+    
+/* ==================== NAVEGACIÓN ==================== */
 
-        reportes: mostrarReportes
-            "Reportes",
-            "Esta sección se conectará con los datos reales de BIOPAE."
-        )
-    };
+const secciones = {
+    dashboard: mostrarPanelGeneral,
+    estudiantes: mostrarEstudiantes,
+    historial: mostrarHistorial,
+    control: mostrarControlDiario,
+    casos: mostrarCasosRevision,
+    reportes: mostrarReportes
+};
+
 
     menu.addEventListener("click", event => {
         const boton = event.target.closest("[data-page]");
