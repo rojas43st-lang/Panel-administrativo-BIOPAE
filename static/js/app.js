@@ -559,7 +559,10 @@ async function mostrarReportes() {
     contenido.appendChild(tarjeta);
 
     try {
-        const datos = await obtenerJSON("/api/admin/entregas");
+        const datos = await obtenerJSON(
+    "/api/admin/entregas",
+    "entregas"
+);
 
         if (!datos.ok || !Array.isArray(datos.entregas)) {
             throw new Error("No se pudieron obtener las entregas.");
