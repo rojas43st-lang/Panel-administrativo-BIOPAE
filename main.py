@@ -361,162 +361,6 @@ async def listar_entregas(request: Request):
             detail="No fue posible consultar el historial de entregas."
         )
 
-# =========================================================
-# HISTORIAL DE ENTREGAS DESDE NEON
-# =========================================================
-
-@app.get("/api/admin/entregas")
-async def listar_entregas(request: Request):
-
-    if not usuario_autenticado(request):
-        raise HTTPException(
-            status_code=401,
-            detail="Debes iniciar sesión."
-        )
-
-    try:
-        with obtener_conexion() as conexion:
-            with conexion.cursor() as cursor:
-                cursor.execute("""
-                    SELECT
-                        en.id,
-                        en.fecha,
-                        en.hora,
-                        e.documento,
-                        e.nombre,
-                        e.apellido,
-                        a.nombre AS alimento,
-                        en.tipo_entrega,
-                        en.estado,
-                        en.observacion
-                    FROM entregas en
-                    JOIN estudiantes e
-                        ON e.id = en.estudiante_id
-                    JOIN alimentos a
-                        ON a.id = en.alimento_id
-                    ORDER BY en.fecha DESC, en.hora DESC, en.id DESC
-                """)
-
-                filas = cursor.fetchall()
-
-                entregas = [
-                    {
-                        "id": fila[0],
-                        "fecha": (
-                            fila[1].isoformat()
-                            if fila[1] else None
-                        ),
-                        "hora": (
-                            fila[2].isoformat()
-                            if fila[2] else None
-                        ),
-                        "documento": fila[3],
-                        "nombre": fila[4],
-                        "apellido": fila[5],
-                        "alimento": fila[6],
-                        "tipo_entrega": fila[7],
-                        "estado": fila[8],
-                        "observacion": fila[9],
-                    }
-                    for fila in filas
-                ]
-
-        return {
-            "ok": True,
-            "total": len(entregas),
-            "entregas": entregas,
-        }
-
-    except HTTPException:
-        raise
-
-    except Exception:
-        logging.exception(
-            "Error consultando el historial de entregas en Neon."
-        )
-        raise HTTPException(
-            status_code=500,
-            detail="No fue posible consultar el historial de entregas."
-        )
-
-# =========================================================
-# HISTORIAL DE ENTREGAS DESDE NEON
-# =========================================================
-
-@app.get("/api/admin/entregas")
-async def listar_entregas(request: Request):
-
-    if not usuario_autenticado(request):
-        raise HTTPException(
-            status_code=401,
-            detail="Debes iniciar sesión."
-        )
-
-    try:
-        with obtener_conexion() as conexion:
-            with conexion.cursor() as cursor:
-                cursor.execute("""
-                    SELECT
-                        en.id,
-                        en.fecha,
-                        en.hora,
-                        e.documento,
-                        e.nombre,
-                        e.apellido,
-                        a.nombre AS alimento,
-                        en.tipo_entrega,
-                        en.estado,
-                        en.observacion
-                    FROM entregas en
-                    JOIN estudiantes e
-                        ON e.id = en.estudiante_id
-                    JOIN alimentos a
-                        ON a.id = en.alimento_id
-                    ORDER BY en.fecha DESC, en.hora DESC, en.id DESC
-                """)
-
-                filas = cursor.fetchall()
-
-                entregas = [
-                    {
-                        "id": fila[0],
-                        "fecha": (
-                            fila[1].isoformat()
-                            if fila[1] else None
-                        ),
-                        "hora": (
-                            fila[2].isoformat()
-                            if fila[2] else None
-                        ),
-                        "documento": fila[3],
-                        "nombre": fila[4],
-                        "apellido": fila[5],
-                        "alimento": fila[6],
-                        "tipo_entrega": fila[7],
-                        "estado": fila[8],
-                        "observacion": fila[9],
-                    }
-                    for fila in filas
-                ]
-
-        return {
-            "ok": True,
-            "total": len(entregas),
-            "entregas": entregas,
-        }
-
-    except HTTPException:
-        raise
-
-    except Exception:
-        logging.exception(
-            "Error consultando el historial de entregas en Neon."
-        )
-        raise HTTPException(
-            status_code=500,
-            detail="No fue posible consultar el historial de entregas."
-        )
-
 
 # =========================================================
 # CERRAR SESIÓN
@@ -531,3 +375,84 @@ async def cerrar_sesion(request: Request):
         url="/",
         status_code=303
     )
+# =========================================================
+# ESTADÍSTICAS DEL PANEL GENERAL
+# =========================================================
+
+@app.get("/api/admin/estadisticas")
+async def obtener_estadisticas(request: Request):
+
+    if not usuario_autenticado(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Debes iniciar sesión."
+        )
+
+    try:
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+
+                cursor.execute("""
+                    SELECT
+                        COUNT(*) FILTER (
+                            WHERE activo = TRUE
+                        ) AS estudiantes_activos
+                    FROM estudiantes
+                """)
+
+                estudiantes_activos = cursor.fetchone()[0] or 0
+
+                cursor.execute("""
+                    SELECT
+                        COUNT(*) AS entregas_hoy,
+                        COUNT(*) FILTER (
+                            WHERE LOWER(a.nombre) LIKE '%leche%'
+                        ) AS vasos_leche,
+                        COUNT(*) FILTER (
+                            WHERE LOWER(a.nombre) LIKE '%almuerzo%'
+                        ) AS almuerzos
+                    FROM entregas en
+                    JOIN alimentos a
+                        ON a.id = en.alimento_id
+                    WHERE en.fecha = CURRENT_DATE
+                      AND LOWER(en.estado) = 'entregado'
+                """)
+
+                fila = cursor.fetchone()
+
+                entregas_hoy = fila[0] or 0
+                vasos_leche = fila[1] or 0
+                almuerzos = fila[2] or 0
+
+                cursor.execute("""
+                    SELECT
+                        COALESCE(SUM(cantidad_disponible), 0),
+                        COALESCE(SUM(cantidad_entregada), 0)
+                    FROM cupos_diarios
+                    WHERE fecha = CURRENT_DATE
+                """)
+
+                cupos = cursor.fetchone()
+
+        return {
+            "ok": True,
+            "estudiantes_activos": estudiantes_activos,
+            "entregas_hoy": entregas_hoy,
+            "vasos_leche": vasos_leche,
+            "almuerzos": almuerzos,
+            "cupos_disponibles": cupos[0],
+            "cupos_entregados": cupos[1]
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logging.exception(
+            "Error consultando las estadísticas de BIOPAE."
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible consultar las estadísticas."
+        )
