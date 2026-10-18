@@ -1,4 +1,3 @@
-
 document.addEventListener("DOMContentLoaded", () => {
     const login = document.getElementById("view-login");
     const app = document.getElementById("view-app");
@@ -21,11 +20,11 @@ document.addEventListener("DOMContentLoaded", () => {
     login.classList.add("hidden");
     app.classList.remove("hidden");
 
-    document.getElementById("sidebar-usuario").textContent =
-        sesion.usuario || "Administrador";
+    const usuario = document.getElementById("sidebar-usuario");
+    const rol = document.getElementById("sidebar-rol");
 
-    document.getElementById("sidebar-rol").textContent =
-        sesion.rol || "Coordinador";
+    if (usuario) usuario.textContent = sesion.usuario || "Administrador";
+    if (rol) rol.textContent = sesion.rol || "Coordinador";
 
     const fecha = document.getElementById("topbar-fecha");
 
@@ -36,12 +35,63 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function mostrarEncabezado(titulo, descripcion) {
-        contenido.innerHTML = `
-            <div class="page-header">
-                <h1>${titulo}</h1>
-                <p>${descripcion}</p>
-            </div>
-        `;
+        contenido.innerHTML = "";
+
+        const encabezado = document.createElement("div");
+        encabezado.className = "page-header";
+
+        const h1 = document.createElement("h1");
+        h1.textContent = titulo;
+
+        const p = document.createElement("p");
+        p.textContent = descripcion;
+
+        encabezado.append(h1, p);
+        contenido.appendChild(encabezado);
+    }
+
+    function crearCelda(fila, valor) {
+        const td = document.createElement("td");
+
+        td.textContent =
+            valor === null || valor === undefined || valor === ""
+                ? "—"
+                : String(valor);
+
+        fila.appendChild(td);
+    }
+
+    function crearTabla(titulos, filasDatos) {
+        const tabla = document.createElement("table");
+        tabla.className = "admin-table";
+
+        const thead = document.createElement("thead");
+        const filaCabecera = document.createElement("tr");
+
+        titulos.forEach(titulo => {
+            const th = document.createElement("th");
+            th.textContent = titulo;
+            filaCabecera.appendChild(th);
+        });
+
+        thead.appendChild(filaCabecera);
+        tabla.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+
+        filasDatos.forEach(valores => {
+            const fila = document.createElement("tr");
+
+            valores.forEach(valor => {
+                crearCelda(fila, valor);
+            });
+
+            tbody.appendChild(fila);
+        });
+
+        tabla.appendChild(tbody);
+
+        return tabla;
     }
 
     function mostrarPanelGeneral() {
@@ -58,321 +108,102 @@ document.addEventListener("DOMContentLoaded", () => {
         `);
     }
 
+    async function obtenerJSON(url, claveLista) {
+        const respuesta = await fetch(url, {
+            method: "GET",
+            credentials: "same-origin",
+            headers: {
+                "Accept": "application/json"
+            }
+        });
+
+        if (respuesta.status === 401) {
+            throw new Error(
+                "Tu sesión no está activa. Inicia sesión nuevamente."
+            );
+        }
+
+        if (!respuesta.ok) {
+            throw new Error(`Error HTTP ${respuesta.status}`);
+        }
+
+        const datos = await respuesta.json();
+
+        if (!datos.ok || !Array.isArray(datos[claveLista])) {
+            throw new Error(
+                "La respuesta de la API no tiene el formato esperado."
+            );
+        }
+
+        return datos;
+    }
+
     async function mostrarEstudiantes() {
         mostrarEncabezado(
             "Estudiantes",
             "Listado de estudiantes consultado directamente desde Neon."
         );
 
-        contenido.insertAdjacentHTML("beforeend", `
-            <div class="admin-panel-card">
-                <p id="estudiantes-estado">Cargando estudiantes...</p>
-                <div id="estudiantes-tabla"></div>
-            </div>
-        `);
+        const tarjeta = document.createElement("div");
+        tarjeta.className = "admin-panel-card";
 
-        const estado = document.getElementById("estudiantes-estado");
-        const tabla = document.getElementById("estudiantes-tabla");
+        const estado = document.createElement("p");
+        estado.textContent = "Cargando estudiantes...";
+
+        const tablaContenedor = document.createElement("div");
+        tablaContenedor.style.overflowX = "auto";
+
+        tarjeta.append(estado, tablaContenedor);
+        contenido.appendChild(tarjeta);
 
         try {
-            const respuesta = await fetch("/api/admin/estudiantes", {
-                method: "GET",
-                credentials: "same-origin",
-                headers: {
-                    "Accept": "application/json"
-                }
-            });
+            const datos = await obtenerJSON(
+                "/api/admin/estudiantes",
+                "estudiantes"
+            );
 
-            if (respuesta.status === 401) {
-                estado.textContent =
-                    "Tu sesión no está activa. Inicia sesión nuevamente.";
-                return;
-            }
-
-            if (!respuesta.ok) {
-                throw new Error(`Error HTTP ${respuesta.status}`);
-            }
-
-            const datos = await respuesta.json();
-
-            if (!datos.ok || !Array.isArray(datos.estudiantes)) {
-                throw new Error("La respuesta de la API no tiene el formato esperado.");
-            }
+            if (!tarjeta.isConnected) return;
 
             estado.textContent = `Total de estudiantes: ${datos.total}`;
 
             if (datos.estudiantes.length === 0) {
-                tabla.textContent = "No hay estudiantes registrados.";
+                tablaContenedor.textContent =
+                    "No hay estudiantes registrados.";
                 return;
             }
 
-            const tablaHTML = document.createElement("table");
-            tablaHTML.className = "admin-table";
+            const filas = datos.estudiantes.map(estudiante => [
+                estudiante.documento,
+                estudiante.nombre,
+                estudiante.apellido,
+                estudiante.grupo,
+                estudiante.beneficio || "No beneficiario",
+                estudiante.activo ? "Activo" : "Inactivo"
+            ]);
 
-            const thead = document.createElement("thead");
-            const filaCabecera = document.createElement("tr");
-["Documento", "Nombre", "Apellido", "Grupo", "Beneficio", "Estado"].forEach(texto => {
-                const th = document.createElement("th");
-                th.textContent = texto;
-                filaCabecera.appendChild(th);
-            });
-
-            thead.appendChild(filaCabecera);
-            tablaHTML.appendChild(thead);
-
-            const tbody = document.createElement("tbody");
-
-            datos.estudiantes.forEach(estudiante => {
-                const fila = document.createElement("tr");
-
-     const valores = [
-    estudiante.documento,
-    estudiante.nombre,
-    estudiante.apellido,
-    estudiante.grupo,
-    estudiante.beneficio || "No beneficiario",
-    estudiante.activo ? "Activo" : "Inactivo"
-];
-
-                valores.forEach(valor => {
-                    const td = document.createElement("td");
-                    td.textContent = valor ?? "—";
-                    fila.appendChild(td);
-                });
-
-                tbody.appendChild(fila);
-            });
-
-            tablaHTML.appendChild(tbody);
-            tabla.replaceChildren(tablaHTML);
-
+            tablaContenedor.replaceChildren(
+                crearTabla(
+                    [
+                        "Documento",
+                        "Nombre",
+                        "Apellido",
+                        "Grupo",
+                        "Beneficio",
+                        "Estado"
+                    ],
+                    filas
+                )
+            );
         } catch (error) {
-            console.error("BIOPAE: error cargando estudiantes:", error);
-            estado.textContent =
-                "No se pudieron cargar los estudiantes. Recarga la página e inténtalo de nuevo.";
-        }
-    }
+            console.error(
+                "BIOPAE: error cargando estudiantes:",
+                error
+            );
 
-
-    async function mostrarHistorial() {
-        mostrarEncabezado(
-            "Historial de entregas",
-            "Registro de alimentos entregados, consultado desde Neon."
-        );
-
-        const contenedor = document.createElement("div");
-        contenedor.className = "admin-panel-card";
-
-        const estado = document.createElement("p");
-        estado.textContent = "Cargando historial de entregas...";
-
-        const tablaContenedor = document.createElement("div");
-        tablaContenedor.style.overflowX = "auto";
-
-        contenedor.append(estado, tablaContenedor);
-        contenido.appendChild(contenedor);
-
-        try {
-            const respuesta = await fetch("/api/admin/entregas", {
-                credentials: "same-origin",
-                headers: {
-                    "Accept": "application/json"
-                }
-            });
-
-            if (respuesta.status === 401) {
-                estado.textContent = "Tu sesión ha expirado. Inicia sesión nuevamente.";
-                return;
-            }
-
-            if (!respuesta.ok) {
-                throw new Error(`Error HTTP ${respuesta.status}`);
-            }
-
-            const datos = await respuesta.json();
-
-            if (!datos.ok || !Array.isArray(datos.entregas)) {
-                throw new Error("Respuesta inesperada de la API.");
-            }
-
-            // Evita mostrar datos si el usuario cambió de sección.
-            if (!contenedor.isConnected) return;
-
-            estado.textContent = `Total de entregas: ${datos.total}`;
-
-            if (datos.entregas.length === 0) {
-                tablaContenedor.textContent = "No hay entregas registradas.";
-                return;
-            }
-
-            const tabla = document.createElement("table");
-            tabla.className = "admin-table";
-
-            const encabezado = document.createElement("thead");
-            const filaEncabezado = document.createElement("tr");
-
-            [
-                "Fecha",
-                "Hora",
-                "Documento",
-                "Estudiante",
-                "Alimento",
-                "Tipo de entrega",
-                "Estado"
-            ].forEach(titulo => {
-                const th = document.createElement("th");
-                th.textContent = titulo;
-                filaEncabezado.appendChild(th);
-            });
-
-            encabezado.appendChild(filaEncabezado);
-            tabla.appendChild(encabezado);
-
-            const cuerpo = document.createElement("tbody");
-
-            datos.entregas.forEach(entrega => {
-                const fila = document.createElement("tr");
-
-                const valores = [
-                    entrega.fecha,
-                    entrega.hora,
-                    entrega.documento,
-                    `${entrega.nombre || ""} ${entrega.apellido || ""}`.trim(),
-                    entrega.alimento,
-                    entrega.tipo_entrega,
-                    entrega.estado
-                ];
-
-                valores.forEach(valor => {
-                    const td = document.createElement("td");
-                    td.textContent = valor ?? "—";
-                    fila.appendChild(td);
-                });
-
-                cuerpo.appendChild(fila);
-            });
-
-            tabla.appendChild(cuerpo);
-            tablaContenedor.replaceChildren(tabla);
-
-        } catch (error) {
-            console.error("Error consultando entregas:", error);
-
-            if (contenedor.isConnected) {
+            if (tarjeta.isConnected) {
                 estado.textContent =
-                    "No fue posible cargar el historial de entregas.";
-            }
-        }
-    }
-
-    
-    async function mostrarHistorial() {
-        mostrarEncabezado(
-            "Historial de entregas",
-            "Registro de alimentos entregados, consultado desde Neon."
-        );
-
-        const contenedor = document.createElement("div");
-        contenedor.className = "admin-panel-card";
-
-        const estado = document.createElement("p");
-        estado.textContent = "Cargando historial de entregas...";
-
-        const tablaContenedor = document.createElement("div");
-        tablaContenedor.style.overflowX = "auto";
-
-        contenedor.append(estado, tablaContenedor);
-        contenido.appendChild(contenedor);
-
-        try {
-            const respuesta = await fetch("/api/admin/entregas", {
-                credentials: "same-origin",
-                headers: {
-                    "Accept": "application/json"
-                }
-            });
-
-            if (respuesta.status === 401) {
-                estado.textContent = "Tu sesión ha expirado. Inicia sesión nuevamente.";
-                return;
-            }
-
-            if (!respuesta.ok) {
-                throw new Error(`Error HTTP ${respuesta.status}`);
-            }
-
-            const datos = await respuesta.json();
-
-            if (!datos.ok || !Array.isArray(datos.entregas)) {
-                throw new Error("Respuesta inesperada de la API.");
-            }
-
-            // Evita mostrar datos si el usuario cambió de sección.
-            if (!contenedor.isConnected) return;
-
-            estado.textContent = `Total de entregas: ${datos.total}`;
-
-            if (datos.entregas.length === 0) {
-                tablaContenedor.textContent = "No hay entregas registradas.";
-                return;
-            }
-
-            const tabla = document.createElement("table");
-            tabla.className = "admin-table";
-
-            const encabezado = document.createElement("thead");
-            const filaEncabezado = document.createElement("tr");
-
-            [
-                "Fecha",
-                "Hora",
-                "Documento",
-                "Estudiante",
-                "Alimento",
-                "Tipo de entrega",
-                "Estado"
-            ].forEach(titulo => {
-                const th = document.createElement("th");
-                th.textContent = titulo;
-                filaEncabezado.appendChild(th);
-            });
-
-            encabezado.appendChild(filaEncabezado);
-            tabla.appendChild(encabezado);
-
-            const cuerpo = document.createElement("tbody");
-
-            datos.entregas.forEach(entrega => {
-                const fila = document.createElement("tr");
-
-                const valores = [
-                    entrega.fecha,
-                    entrega.hora,
-                    entrega.documento,
-                    `${entrega.nombre || ""} ${entrega.apellido || ""}`.trim(),
-                    entrega.alimento,
-                    entrega.tipo_entrega,
-                    entrega.estado
-                ];
-
-                valores.forEach(valor => {
-                    const td = document.createElement("td");
-                    td.textContent = valor ?? "—";
-                    fila.appendChild(td);
-                });
-
-                cuerpo.appendChild(fila);
-            });
-
-            tabla.appendChild(cuerpo);
-            tablaContenedor.replaceChildren(tabla);
-
-        } catch (error) {
-            console.error("Error consultando entregas:", error);
-
-            if (contenedor.isConnected) {
-                estado.textContent =
-                    "No fue posible cargar el historial de entregas.";
+                    error.message ||
+                    "No se pudieron cargar los estudiantes.";
             }
         }
     }
@@ -383,8 +214,8 @@ document.addEventListener("DOMContentLoaded", () => {
             "Registro de alimentos entregados, consultado desde Neon."
         );
 
-        const contenedor = document.createElement("div");
-        contenedor.className = "admin-panel-card";
+        const tarjeta = document.createElement("div");
+        tarjeta.className = "admin-panel-card";
 
         const estado = document.createElement("p");
         estado.textContent = "Cargando historial de entregas...";
@@ -392,340 +223,89 @@ document.addEventListener("DOMContentLoaded", () => {
         const tablaContenedor = document.createElement("div");
         tablaContenedor.style.overflowX = "auto";
 
-        contenedor.append(estado, tablaContenedor);
-        contenido.appendChild(contenedor);
+        tarjeta.append(estado, tablaContenedor);
+        contenido.appendChild(tarjeta);
 
         try {
-            const respuesta = await fetch("/api/admin/entregas", {
-                credentials: "same-origin",
-                headers: {
-                    "Accept": "application/json"
-                }
-            });
+            const datos = await obtenerJSON(
+                "/api/admin/entregas",
+                "entregas"
+            );
 
-            if (respuesta.status === 401) {
-                estado.textContent = "Tu sesión ha expirado. Inicia sesión nuevamente.";
-                return;
-            }
-
-            if (!respuesta.ok) {
-                throw new Error(`Error HTTP ${respuesta.status}`);
-            }
-
-            const datos = await respuesta.json();
-
-            if (!datos.ok || !Array.isArray(datos.entregas)) {
-                throw new Error("Respuesta inesperada de la API.");
-            }
-
-            // Evita mostrar datos si el usuario cambió de sección.
-            if (!contenedor.isConnected) return;
+            if (!tarjeta.isConnected) return;
 
             estado.textContent = `Total de entregas: ${datos.total}`;
 
             if (datos.entregas.length === 0) {
-                tablaContenedor.textContent = "No hay entregas registradas.";
+                tablaContenedor.textContent =
+                    "No hay entregas registradas.";
                 return;
             }
 
-            const tabla = document.createElement("table");
-            tabla.className = "admin-table";
+            const filas = datos.entregas.map(entrega => [
+                entrega.fecha,
+                entrega.hora,
+                entrega.documento,
+                `${entrega.nombre || ""} ${entrega.apellido || ""}`.trim(),
+                entrega.alimento,
+                entrega.tipo_entrega,
+                entrega.estado
+            ]);
 
-            const encabezado = document.createElement("thead");
-            const filaEncabezado = document.createElement("tr");
-
-            [
-                "Fecha",
-                "Hora",
-                "Documento",
-                "Estudiante",
-                "Alimento",
-                "Tipo de entrega",
-                "Estado"
-            ].forEach(titulo => {
-                const th = document.createElement("th");
-                th.textContent = titulo;
-                filaEncabezado.appendChild(th);
-            });
-
-            encabezado.appendChild(filaEncabezado);
-            tabla.appendChild(encabezado);
-
-            const cuerpo = document.createElement("tbody");
-
-            datos.entregas.forEach(entrega => {
-                const fila = document.createElement("tr");
-
-                const valores = [
-                    entrega.fecha,
-                    entrega.hora,
-                    entrega.documento,
-                    `${entrega.nombre || ""} ${entrega.apellido || ""}`.trim(),
-                    entrega.alimento,
-                    entrega.tipo_entrega,
-                    entrega.estado
-                ];
-
-                valores.forEach(valor => {
-                    const td = document.createElement("td");
-                    td.textContent = valor ?? "—";
-                    fila.appendChild(td);
-                });
-
-                cuerpo.appendChild(fila);
-            });
-
-            tabla.appendChild(cuerpo);
-            tablaContenedor.replaceChildren(tabla);
-
+            tablaContenedor.replaceChildren(
+                crearTabla(
+                    [
+                        "Fecha",
+                        "Hora",
+                        "Documento",
+                        "Estudiante",
+                        "Alimento",
+                        "Tipo de entrega",
+                        "Estado"
+                    ],
+                    filas
+                )
+            );
         } catch (error) {
-            console.error("Error consultando entregas:", error);
+            console.error(
+                "BIOPAE: error cargando historial:",
+                error
+            );
 
-            if (contenedor.isConnected) {
+            if (tarjeta.isConnected) {
                 estado.textContent =
+                    error.message ||
                     "No fue posible cargar el historial de entregas.";
             }
         }
     }
 
+    function mostrarPendiente(titulo, descripcion) {
+        mostrarEncabezado(titulo, descripcion);
 
-    async function mostrarHistorial() {
-        mostrarEncabezado(
-            "Historial de entregas",
-            "Registro de alimentos entregados, consultado desde Neon."
-        );
-
-        const contenedor = document.createElement("div");
-        contenedor.className = "admin-panel-card";
-
-        const estado = document.createElement("p");
-        estado.textContent = "Cargando historial de entregas...";
-
-        const tablaContenedor = document.createElement("div");
-        tablaContenedor.style.overflowX = "auto";
-
-        contenedor.append(estado, tablaContenedor);
-        contenido.appendChild(contenedor);
-
-        try {
-            const respuesta = await fetch("/api/admin/entregas", {
-                credentials: "same-origin",
-                headers: {
-                    "Accept": "application/json"
-                }
-            });
-
-            if (respuesta.status === 401) {
-                estado.textContent = "Tu sesión ha expirado. Inicia sesión nuevamente.";
-                return;
-            }
-
-            if (!respuesta.ok) {
-                throw new Error(`Error HTTP ${respuesta.status}`);
-            }
-
-            const datos = await respuesta.json();
-
-            if (!datos.ok || !Array.isArray(datos.entregas)) {
-                throw new Error("Respuesta inesperada de la API.");
-            }
-
-            // Evita mostrar datos si el usuario cambió de sección.
-            if (!contenedor.isConnected) return;
-
-            estado.textContent = `Total de entregas: ${datos.total}`;
-
-            if (datos.entregas.length === 0) {
-                tablaContenedor.textContent = "No hay entregas registradas.";
-                return;
-            }
-
-            const tabla = document.createElement("table");
-            tabla.className = "admin-table";
-
-            const encabezado = document.createElement("thead");
-            const filaEncabezado = document.createElement("tr");
-
-            [
-                "Fecha",
-                "Hora",
-                "Documento",
-                "Estudiante",
-                "Alimento",
-                "Tipo de entrega",
-                "Estado"
-            ].forEach(titulo => {
-                const th = document.createElement("th");
-                th.textContent = titulo;
-                filaEncabezado.appendChild(th);
-            });
-
-            encabezado.appendChild(filaEncabezado);
-            tabla.appendChild(encabezado);
-
-            const cuerpo = document.createElement("tbody");
-
-            datos.entregas.forEach(entrega => {
-                const fila = document.createElement("tr");
-
-                const valores = [
-                    entrega.fecha,
-                    entrega.hora,
-                    entrega.documento,
-                    `${entrega.nombre || ""} ${entrega.apellido || ""}`.trim(),
-                    entrega.alimento,
-                    entrega.tipo_entrega,
-                    entrega.estado
-                ];
-
-                valores.forEach(valor => {
-                    const td = document.createElement("td");
-                    td.textContent = valor ?? "—";
-                    fila.appendChild(td);
-                });
-
-                cuerpo.appendChild(fila);
-            });
-
-            tabla.appendChild(cuerpo);
-            tablaContenedor.replaceChildren(tabla);
-
-        } catch (error) {
-            console.error("Error consultando entregas:", error);
-
-            if (contenedor.isConnected) {
-                estado.textContent =
-                    "No fue posible cargar el historial de entregas.";
-            }
-        }
+        contenido.insertAdjacentHTML("beforeend", `
+            <div class="admin-panel-card">
+                <p>Esta sección todavía no está conectada a los datos de Neon.</p>
+            </div>
+        `);
     }
 
-    async function mostrarHistorial() {
-        mostrarEncabezado(
-            "Historial de entregas",
-            "Registro de alimentos entregados, consultado desde Neon."
-        );
-
-        const contenedor = document.createElement("div");
-        contenedor.className = "admin-panel-card";
-
-        const estado = document.createElement("p");
-        estado.textContent = "Cargando historial de entregas...";
-
-        const tablaContenedor = document.createElement("div");
-        tablaContenedor.style.overflowX = "auto";
-
-        contenedor.append(estado, tablaContenedor);
-        contenido.appendChild(contenedor);
-
-        try {
-            const respuesta = await fetch("/api/admin/entregas", {
-                credentials: "same-origin",
-                headers: {
-                    "Accept": "application/json"
-                }
-            });
-
-            if (respuesta.status === 401) {
-                estado.textContent = "Tu sesión ha expirado. Inicia sesión nuevamente.";
-                return;
-            }
-
-            if (!respuesta.ok) {
-                throw new Error(`Error HTTP ${respuesta.status}`);
-            }
-
-            const datos = await respuesta.json();
-
-            if (!datos.ok || !Array.isArray(datos.entregas)) {
-                throw new Error("Respuesta inesperada de la API.");
-            }
-
-            // Evita mostrar datos si el usuario cambió de sección.
-            if (!contenedor.isConnected) return;
-
-            estado.textContent = `Total de entregas: ${datos.total}`;
-
-            if (datos.entregas.length === 0) {
-                tablaContenedor.textContent = "No hay entregas registradas.";
-                return;
-            }
-
-            const tabla = document.createElement("table");
-            tabla.className = "admin-table";
-
-            const encabezado = document.createElement("thead");
-            const filaEncabezado = document.createElement("tr");
-
-            [
-                "Fecha",
-                "Hora",
-                "Documento",
-                "Estudiante",
-                "Alimento",
-                "Tipo de entrega",
-                "Estado"
-            ].forEach(titulo => {
-                const th = document.createElement("th");
-                th.textContent = titulo;
-                filaEncabezado.appendChild(th);
-            });
-
-            encabezado.appendChild(filaEncabezado);
-            tabla.appendChild(encabezado);
-
-            const cuerpo = document.createElement("tbody");
-
-            datos.entregas.forEach(entrega => {
-                const fila = document.createElement("tr");
-
-                const valores = [
-                    entrega.fecha,
-                    entrega.hora,
-                    entrega.documento,
-                    `${entrega.nombre || ""} ${entrega.apellido || ""}`.trim(),
-                    entrega.alimento,
-                    entrega.tipo_entrega,
-                    entrega.estado
-                ];
-
-                valores.forEach(valor => {
-                    const td = document.createElement("td");
-                    td.textContent = valor ?? "—";
-                    fila.appendChild(td);
-                });
-
-                cuerpo.appendChild(fila);
-            });
-
-            tabla.appendChild(cuerpo);
-            tablaContenedor.replaceChildren(tabla);
-
-        } catch (error) {
-            console.error("Error consultando entregas:", error);
-
-            if (contenedor.isConnected) {
-                estado.textContent =
-                    "No fue posible cargar el historial de entregas.";
-            }
-        }
-    }
-
-    
     const secciones = {
         dashboard: mostrarPanelGeneral,
         estudiantes: mostrarEstudiantes,
         historial: mostrarHistorial,
-        ),
-        control: () => mostrarEncabezado(
+
+        control: () => mostrarPendiente(
             "Control diario",
             "Esta sección se conectará con los cupos y entregas del día."
         ),
-        casos: () => mostrarEncabezado(
+
+        casos: () => mostrarPendiente(
             "Casos en revisión",
             "Esta sección se conectará con los registros correspondientes."
         ),
-        reportes: () => mostrarEncabezado(
+
+        reportes: () => mostrarPendiente(
             "Reportes",
             "Esta sección se conectará con los datos reales de BIOPAE."
         )
@@ -736,8 +316,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!boton) return;
 
-        const pagina = boton.dataset.page;
-        const cargarSeccion = secciones[pagina];
+        const cargarSeccion = secciones[boton.dataset.page];
 
         if (!cargarSeccion) return;
 
