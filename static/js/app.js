@@ -111,8 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const thead = document.createElement("thead");
             const filaCabecera = document.createElement("tr");
-
-            ["Documento", "Nombre", "Apellido", "Grupo", "Estado"].forEach(texto => {
+["Documento", "Nombre", "Apellido", "Grupo", "Beneficio", "Estado"].forEach(texto => {
                 const th = document.createElement("th");
                 th.textContent = texto;
                 filaCabecera.appendChild(th);
