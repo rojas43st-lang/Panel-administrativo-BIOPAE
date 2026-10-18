@@ -458,6 +458,82 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    
+async function mostrarCasosRevision() {
+    mostrarEncabezado(
+        "Casos en revisión",
+        "Entregas con estados pendientes o con observaciones registradas."
+    );
+
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "admin-panel-card";
+
+    const estado = document.createElement("p");
+    estado.textContent = "Consultando casos en Neon...";
+
+    const tablaContenedor = document.createElement("div");
+    tablaContenedor.style.overflowX = "auto";
+
+    tarjeta.append(estado, tablaContenedor);
+    contenido.appendChild(tarjeta);
+
+    try {
+        const datos = await obtenerJSON(
+            "/api/admin/casos-revision",
+            "casos"
+        );
+
+        if (!tarjeta.isConnected) return;
+
+        estado.textContent = `Total de casos encontrados: ${datos.total}`;
+
+        if (datos.casos.length === 0) {
+            estado.textContent =
+                "No hay casos en revisión registrados actualmente.";
+            return;
+        }
+
+        const filas = datos.casos.map(caso => [
+            caso.fecha,
+            caso.hora,
+            caso.documento,
+            `${caso.nombre || ""} ${caso.apellido || ""}`.trim(),
+            caso.alimento,
+            caso.tipo_entrega,
+            caso.estado,
+            caso.observacion
+        ]);
+
+        tablaContenedor.replaceChildren(
+            crearTabla(
+                [
+                    "Fecha",
+                    "Hora",
+                    "Documento",
+                    "Estudiante",
+                    "Alimento",
+                    "Tipo de entrega",
+                    "Estado",
+                    "Observación"
+                ],
+                filas
+            )
+        );
+
+    } catch (error) {
+        console.error(
+            "BIOPAE: error cargando casos en revisión:",
+            error
+        );
+
+        if (tarjeta.isConnected) {
+            estado.textContent =
+                error.message ||
+                "No fue posible cargar los casos en revisión.";
+        }
+    }
+}
+
     /* ==================== SECCIONES PENDIENTES ==================== */
 
     function mostrarPendiente(titulo, descripcion) {
