@@ -23,3 +23,206 @@
 .admin-panel-card tr:last-child td { border-bottom:0; }
 .error-box { border:1px solid #e4a49b; border-radius:12px; padding:16px; background:#fff1ee; color:#812c20; }
 @media(max-width:800px) { .admin-shell { display:block; } .admin-shell .sidebar { min-width:0; } .admin-shell .nav-menu { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); padding:12px; } .admin-shell .nav-item { padding:10px; } .admin-shell .page-content { padding:16px; } .admin-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+/* ===== Panel general BioPAE ===== */
+
+.dashboard-biopae {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.dashboard-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 17px 20px;
+    background: #dcebe5;
+    border: 1px solid #d1e3db;
+    border-radius: 15px;
+    color: #14403a;
+}
+
+.dashboard-banner-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 13px;
+    background: #ffffff;
+    font-size: 23px;
+}
+
+.dashboard-banner p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.dashboard-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.dashboard-kpi {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    min-width: 0;
+    padding: 20px;
+    background: #ffffff;
+    border: 1px solid #e1e4db;
+    border-radius: 18px;
+    box-shadow: 0 4px 14px rgba(20, 64, 58, 0.035);
+}
+
+.dashboard-kpi-icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 14px;
+    font-size: 22px;
+}
+
+.icon-green {
+    background: #dcebe5;
+}
+
+.icon-gold {
+    background: #fbeedb;
+}
+
+.dashboard-kpi-label {
+    margin: 0 0 5px;
+    color: #5b6b67;
+    font-size: 13px;
+}
+
+.dashboard-kpi-value {
+    display: block;
+    color: #14403a;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 30px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+.dashboard-kpi-note {
+    display: block;
+    margin-top: 5px;
+    color: #6b7974;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.dashboard-lower {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.dashboard-info-card {
+    min-width: 0;
+    padding: 23px;
+    background: #ffffff;
+    border: 1px solid #e1e4db;
+    border-radius: 18px;
+}
+
+.dashboard-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.dashboard-section-heading h2 {
+    margin: 0;
+    color: #14403a;
+    font-size: 19px;
+}
+
+.dashboard-description {
+    margin: 0;
+    color: #5b6b67;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.dashboard-cupos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.dashboard-cupo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    border-radius: 13px;
+    background: #eff1e8;
+}
+
+.dashboard-cupo-icon {
+    font-size: 17px;
+}
+
+.dashboard-cupo-label {
+    display: block;
+    color: #5b6b67;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.dashboard-cupo strong {
+    color: #14403a;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 24px;
+}
+
+.dashboard-note {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 20px;
+    padding: 15px;
+    border-left: 4px solid #e3a008;
+    border-radius: 8px;
+    background: #fbf6e9;
+    color: #5d4b20;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+@media (max-width: 1200px) {
+    .dashboard-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 800px) {
+    .dashboard-lower {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-kpi {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 460px) {
+    .dashboard-kpis,
+    .dashboard-cupos {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-kpi-value {
+        font-size: 26px;
+    }
+}
