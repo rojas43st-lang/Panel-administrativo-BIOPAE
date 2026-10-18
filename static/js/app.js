@@ -552,45 +552,16 @@ async function mostrarCasosRevision() {
 
     /* ==================== NAVEGACIÓN ==================== */
 
-    const secciones = {
-        dashboard: mostrarPanelGeneral,
-        estudiantes: mostrarEstudiantes,
-        historial: mostrarHistorial,
-        control: mostrarControlDiario,
+   
+const secciones = {
+    dashboard: mostrarPanelGeneral,
+    estudiantes: mostrarEstudiantes,
+    historial: mostrarHistorial,
+    control: mostrarControlDiario,
+    casos: mostrarCasosRevision,
 
-        casos: mostrarCasosRevision,
-            "Casos en revisión",
-            "Esta sección se conectará con los registros correspondientes."
-        ),
-
-        reportes: () => mostrarPendiente(
-            "Reportes",
-            "Esta sección se conectará con los datos reales de BIOPAE."
-        )
-    };
-
-    menu.addEventListener("click", event => {
-        const boton = event.target.closest("[data-page]");
-
-        if (!boton) return;
-
-        const cargarSeccion = secciones[boton.dataset.page];
-
-        if (!cargarSeccion) return;
-
-        menu.querySelectorAll("[data-page]").forEach(elemento => {
-            elemento.classList.toggle(
-                "active",
-                elemento === boton
-            );
-        });
-
-        cargarSeccion();
-    });
-
-    /* ==================== INICIALIZACIÓN ==================== */
-
-    mostrarPanelGeneral();
-
-    console.log("BIOPAE: panel iniciado correctamente.");
-});
+    reportes: () => mostrarPendiente(
+        "Reportes",
+        "Esta sección se conectará con los datos reales de BIOPAE."
+    )
+};
