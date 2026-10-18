@@ -189,15 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 }
-        );
 
-        contenido.insertAdjacentHTML("beforeend", `
-            <div class="admin-panel-card">
-                <h2>Bienvenido a BIOPAE</h2>
-                <p>Selecciona una sección del menú para consultar la información.</p>
-            </div>
-        `);
-    }
 
     async function obtenerJSON(url, claveLista) {
         const respuesta = await fetch(url, {
