@@ -686,75 +686,229 @@ async function mostrarPanelGeneral() {
 
     /* ==================== CONTROL DIARIO ==================== */
 
-    async function mostrarControlDiario() {
-        mostrarEncabezado(
-            "Control diario",
-            "Consulta los cupos registrados de vasos de leche y almuerzos."
+
+async function mostrarControlDiario() {
+    mostrarEncabezado(
+        "Control diario",
+        "Registra entregas y consulta los cupos de BIOPAE."
+    );
+
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "admin-panel-card";
+
+    tarjeta.innerHTML = `
+        <h2>Registrar entrega</h2>
+        <p>Selecciona el estudiante y el alimento que vas a entregar.</p>
+
+        <form id="form-entrega-diaria" class="admin-filter">
+            <div>
+                <label for="entrega-estudiante">Estudiante</label>
+                <select id="entrega-estudiante" name="estudiante_id" required>
+                    <option value="">Cargando estudiantes...</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="entrega-cupo">Alimento y cupo</label>
+                <select id="entrega-cupo" name="cupo_diario_id" required>
+                    <option value="">Cargando cupos...</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="entrega-observacion">Observación (opcional)</label>
+                <input
+                    id="entrega-observacion"
+                    name="observacion"
+                    type="text"
+                    maxlength="500"
+                    placeholder="Observaciones de la entrega"
+                >
+            </div>
+
+            <button type="submit" id="btn-registrar-entrega">
+                Registrar entrega
+            </button>
+        </form>
+
+        <p id="mensaje-entrega" role="status"></p>
+
+        <hr>
+
+        <h2>Cupos registrados</h2>
+        <p id="estado-control">Cargando datos de Neon...</p>
+        <div id="tabla-cupos" style="overflow-x:auto"></div>
+    `;
+
+    contenido.appendChild(tarjeta);
+
+    const formulario = tarjeta.querySelector("#form-entrega-diaria");
+    const selectorEstudiante = tarjeta.querySelector("#entrega-estudiante");
+    const selectorCupo = tarjeta.querySelector("#entrega-cupo");
+    const boton = tarjeta.querySelector("#btn-registrar-entrega");
+    const mensaje = tarjeta.querySelector("#mensaje-entrega");
+    const estado = tarjeta.querySelector("#estado-control");
+    const tablaContenedor = tarjeta.querySelector("#tabla-cupos");
+
+    let cupos = [];
+
+    function dibujarTabla() {
+        if (!cupos.length) {
+            estado.textContent = "No hay cupos diarios registrados.";
+            tablaContenedor.replaceChildren();
+            return;
+        }
+
+        estado.textContent =
+            `${cupos.length} registros encontrados en Neon.`;
+
+        const filas = cupos.map(cupo => [
+            cupo.fecha,
+            cupo.alimento,
+            cupo.cantidad_disponible,
+            cupo.cantidad_entregada
+        ]);
+
+        tablaContenedor.replaceChildren(
+            crearTabla(
+                [
+                    "Fecha",
+                    "Alimento",
+                    "Cupos disponibles",
+                    "Cupos entregados"
+                ],
+                filas
+            )
+        );
+    }
+
+    function actualizarSelectorCupos() {
+        selectorCupo.replaceChildren();
+
+        const disponibles = cupos.filter(
+            cupo => Number(cupo.cantidad_disponible) > 0
         );
 
-        const tarjeta = document.createElement("div");
-        tarjeta.className = "admin-panel-card";
+        const inicial = document.createElement("option");
+        inicial.value = "";
+        inicial.textContent = disponibles.length
+            ? "Selecciona un alimento"
+            : "No hay cupos disponibles";
 
-        const estado = document.createElement("p");
-        estado.textContent = "Cargando datos de Neon...";
+        selectorCupo.appendChild(inicial);
 
-        const tablaContenedor = document.createElement("div");
-        tablaContenedor.style.overflowX = "auto";
+        disponibles.forEach(cupo => {
+            const opcion = document.createElement("option");
+            opcion.value = cupo.id;
+            opcion.textContent =
+                `${cupo.alimento} — ${cupo.fecha} — ` +
+                `${cupo.cantidad_disponible} disponibles`;
 
-        tarjeta.append(estado, tablaContenedor);
-        contenido.appendChild(tarjeta);
+            selectorCupo.appendChild(opcion);
+        });
+
+        selectorCupo.disabled = disponibles.length === 0;
+        boton.disabled = disponibles.length === 0;
+    }
+
+    async function cargarDatos() {
+        const [datosEstudiantes, datosCupos] = await Promise.all([
+            obtenerJSON("/api/admin/estudiantes", "estudiantes"),
+            obtenerJSON("/api/admin/control-diario", "cupos")
+        ]);
+
+        if (!tarjeta.isConnected) return;
+
+        selectorEstudiante.replaceChildren();
+
+        const inicial = document.createElement("option");
+        inicial.value = "";
+        inicial.textContent = "Selecciona un estudiante";
+        selectorEstudiante.appendChild(inicial);
+
+        datosEstudiantes.estudiantes
+            .filter(estudiante => estudiante.activo === true)
+            .forEach(estudiante => {
+                const opcion = document.createElement("option");
+                opcion.value = estudiante.id;
+                opcion.textContent =
+                    `${estudiante.nombre} ${estudiante.apellido} ` +
+                    `(${estudiante.documento})`;
+
+                selectorEstudiante.appendChild(opcion);
+            });
+
+        cupos = datosCupos.cupos;
+        actualizarSelectorCupos();
+        dibujarTabla();
+    }
+
+    formulario.addEventListener("submit", async evento => {
+        evento.preventDefault();
+
+        mensaje.textContent = "";
+        if (!formulario.reportValidity()) return;
+
+        boton.disabled = true;
+        boton.textContent = "Registrando...";
 
         try {
-            const datos = await obtenerJSON(
-                "/api/admin/control-diario",
-                "cupos"
+            const respuesta = await fetch(
+                "/api/admin/control-diario/entregar",
+                {
+                    method: "POST",
+                    credentials: "same-origin",
+                    body: new FormData(formulario)
+                }
             );
 
-            if (!tarjeta.isConnected) return;
+            const resultado = await respuesta.json();
 
-            const cupos = datos.cupos;
-
-            if (cupos.length === 0) {
-                estado.textContent =
-                    "No hay cupos diarios registrados.";
-                return;
+            if (respuesta.status === 401) {
+                throw new Error(
+                    "Tu sesión ha expirado. Inicia sesión nuevamente."
+                );
             }
 
-            estado.textContent =
-                `${cupos.length} registros encontrados en Neon.`;
+            if (!respuesta.ok || !resultado.ok) {
+                throw new Error(
+                    resultado.detail ||
+                    resultado.mensaje ||
+                    "No fue posible registrar la entrega."
+                );
+            }
 
-            const filas = cupos.map(cupo => [
-                cupo.fecha,
-                cupo.alimento,
-                cupo.cantidad_disponible,
-                cupo.cantidad_entregada
-            ]);
+            mensaje.textContent =
+                resultado.mensaje || "Entrega registrada correctamente.";
 
-            tablaContenedor.replaceChildren(
-                crearTabla(
-                    [
-                        "Fecha",
-                        "Alimento",
-                        "Cupos disponibles",
-                        "Cupos entregados"
-                    ],
-                    filas
-                )
-            );
+            formulario.reset();
+            await cargarDatos();
 
         } catch (error) {
-            console.error(
-                "BIOPAE: error cargando Control diario:",
-                error
-            );
-
+            console.error("Error registrando entrega:", error);
+            mensaje.textContent =
+                error.message || "No fue posible registrar la entrega.";
+        } finally {
             if (tarjeta.isConnected) {
-                estado.textContent =
-                    error.message ||
-                    "No fue posible cargar el control diario.";
+                boton.textContent = "Registrar entrega";
+                boton.disabled = !cupos.some(
+                    cupo => Number(cupo.cantidad_disponible) > 0
+                );
             }
         }
+    });
+
+    try {
+        await cargarDatos();
+    } catch (error) {
+        console.error("Error cargando Control diario:", error);
+
+        if (tarjeta.isConnected) {
+            estado.textContent =
+                error.message || "No fue posible cargar los datos de Neon.";
+        }
     }
+}
 
     
     /* ==================== CASOS EN REVISIÓN ==================== */
