@@ -5,111 +5,181 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>BioPAE — Panel Administrativo PAE</title>
+    <meta
+        name="description"
+        content="Panel administrativo de BIOPAE para la gestión del Programa de Alimentación Escolar."
+    >
+
+    <title>BIOPAE | Panel administrativo</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <link
-        href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap"
         rel="stylesheet"
     >
 
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <link
+        rel="stylesheet"
+        href="/static/css/styles.css"
+    >
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <link
+        rel="stylesheet"
+        href="/static/css/admin-integrado.css"
+    >
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+        defer
+    ></script>
+
+    <script
+        src="/static/js/app.js"
+        defer
+    ></script>
 </head>
 
-<body>
+<body class="admin-body">
 
-    <!-- INICIO DE SESIÓN -->
+    <!-- =========================
+         VISTA DE INICIO DE SESIÓN
+    ========================== -->
 
-    <div
+    <section
         id="view-login"
         class="login-screen {% if autenticado %}hidden{% endif %}"
+        aria-labelledby="login-title"
     >
         <div class="login-card">
 
             <div class="login-left">
-
                 <div class="brand">
-                    <div class="brand-icon">🥛</div>
-                    <span>BioPAE</span>
+                    <div class="brand-icon" aria-hidden="true">🥛</div>
+                    <span>BIOPAE</span>
                 </div>
 
+                <span class="login-eyebrow">
+                    Programa de Alimentación Escolar
+                </span>
+
                 <h1>
-                    Que cada almuerzo y cada vaso de leche llegue a quien lo necesita.
+                    Cada entrega cuenta.
+                    Cada estudiante importa.
                 </h1>
 
                 <p>
-                    Panel de control del Programa de Alimentación Escolar
-                    — I.E. Javiera Londoño.
-                    Trazabilidad por estudiante y por fecha, sin cupos
-                    duplicados y sin desperdicio.
+                    Gestiona y supervisa la entrega de vasos de leche
+                    y almuerzos de forma organizada, con información
+                    centralizada para la institución educativa.
                 </p>
 
-                <div class="login-footnote">
-                    Sistema de administración del Programa de Alimentación Escolar.
+                <div class="login-features">
+                    <div class="login-feature">
+                        <span aria-hidden="true">✓</span>
+                        <span>Registro de estudiantes y beneficiarios</span>
+                    </div>
+
+                    <div class="login-feature">
+                        <span aria-hidden="true">✓</span>
+                        <span>Control de entregas y cupos diarios</span>
+                    </div>
+
+                    <div class="login-feature">
+                        <span aria-hidden="true">✓</span>
+                        <span>Seguimiento e información administrativa</span>
+                    </div>
                 </div>
 
+                <p class="login-footnote">
+                    BIOPAE · Gestión y trazabilidad del PAE
+                </p>
             </div>
 
             <div class="login-right">
+                <div class="login-heading-icon" aria-hidden="true">
+                    <span>🔐</span>
+                </div>
 
-                <h2>Iniciar sesión</h2>
+                <h2 id="login-title">Iniciar sesión</h2>
 
                 <p class="muted">
-                    Ingresa tus credenciales para continuar.
+                    Ingresa tus credenciales para acceder al panel.
                 </p>
 
-                <form method="post" action="/admin/login">
-
-                    <label for="login-usuario">Usuario</label>
-
-                    <input
-                        id="login-usuario"
-                        name="usuario"
-                        type="text"
-                        placeholder="Nombre de usuario"
-                        autocomplete="username"
-                        required
+                {% if error %}
+                    <div
+                        class="error-box"
+                        role="alert"
+                        aria-live="polite"
                     >
+                        {{ error }}
+                    </div>
+                {% endif %}
 
-                    <label for="login-clave">Contraseña</label>
+                <form
+                    id="login-form"
+                    action="/admin/login"
+                    method="post"
+                    class="login-form"
+                >
+                    <div class="form-group">
+                        <label for="login-usuario">
+                            Usuario
+                        </label>
 
-                    <input
-                        id="login-clave"
-                        name="contrasena"
-                        type="password"
-                        placeholder="Contraseña"
-                        autocomplete="current-password"
-                        required
-                    >
+                        <input
+                            id="login-usuario"
+                            name="usuario"
+                            type="text"
+                            placeholder="Ingresa tu usuario"
+                            autocomplete="username"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="login-clave">
+                            Contraseña
+                        </label>
+
+                        <input
+                            id="login-clave"
+                            name="contrasena"
+                            type="password"
+                            placeholder="Ingresa tu contraseña"
+                            autocomplete="current-password"
+                            required
+                        >
+                    </div>
 
                     <button
+                        id="btn-login"
                         type="submit"
                         class="btn btn-primary btn-block"
                     >
-                        Ingresar
+                        Ingresar al panel
+                        <span aria-hidden="true">→</span>
                     </button>
-
-                    {% if error %}
-                        <p class="login-error" role="alert">
-                            {{ error }}
-                        </p>
-                    {% endif %}
-
                 </form>
 
+                <p class="login-disclaimer">
+                    Acceso exclusivo para personal autorizado.
+                </p>
             </div>
 
         </div>
-    </div>
+    </section>
 
-    <!-- PANEL ADMINISTRATIVO -->
+
+    <!-- =========================
+         PANEL ADMINISTRATIVO
+    ========================== -->
 
     <div
         id="view-app"
-        class="app-shell {% if not autenticado %}hidden{% endif %}"
+        class="app-shell admin-shell {% if not autenticado %}hidden{% endif %}"
     >
 
         <!-- BARRA LATERAL -->
@@ -117,85 +187,160 @@
         <aside class="sidebar">
 
             <div class="brand brand-sidebar">
-                <div class="brand-icon">🥛</div>
-                <span>BioPAE</span>
+                <div class="brand-icon" aria-hidden="true">🥛</div>
+
+                <div class="brand-text">
+                    <span>BIOPAE</span>
+                    <small>Panel administrativo</small>
+                </div>
             </div>
 
-            <nav id="nav-menu" class="nav-menu">
+            <div class="sidebar-section-label">
+                MENÚ PRINCIPAL
+            </div>
 
-                <button class="nav-item" data-page="dashboard">
-                    📊 Panel general
+            <nav
+                id="nav-menu"
+                class="nav-menu"
+                aria-label="Navegación principal"
+            >
+                <button
+                    type="button"
+                    class="nav-item active"
+                    data-page="dashboard"
+                    aria-current="page"
+                >
+                    <span class="nav-icon" aria-hidden="true">▦</span>
+                    <span>Panel general</span>
                 </button>
 
-                <button class="nav-item" data-page="estudiantes">
-                    👥 Estudiantes
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-page="estudiantes"
+                >
+                    <span class="nav-icon" aria-hidden="true">♙</span>
+                    <span>Estudiantes</span>
                 </button>
 
-                <button class="nav-item" data-page="historial">
-                    🗓️ Historial de entregas
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-page="historial"
+                >
+                    <span class="nav-icon" aria-hidden="true">◷</span>
+                    <span>Historial de entregas</span>
                 </button>
 
-                <button class="nav-item" data-page="control">
-                    🔎 Control diario
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-page="control"
+                >
+                    <span class="nav-icon" aria-hidden="true">✓</span>
+                    <span>Control diario</span>
                 </button>
 
-                <button class="nav-item" data-page="casos">
-                    ⚠️ Casos en revisión
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-page="casos"
+                >
+                    <span class="nav-icon" aria-hidden="true">⚑</span>
+                    <span>Casos por revisar</span>
                 </button>
 
-                <button class="nav-item" data-page="reportes">
-                    📈 Reportes
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-page="reportes"
+                >
+                    <span class="nav-icon" aria-hidden="true">▤</span>
+                    <span>Reportes</span>
                 </button>
-
             </nav>
 
-            <div class="sidebar-footer">
+            <div class="sidebar-bottom">
+                <div class="sidebar-profile">
+                    <div class="profile-avatar" aria-hidden="true">
+                        <span>♙</span>
+                    </div>
 
-                <div id="sidebar-rol" class="sidebar-rol">
-                    Administrador
+                    <div class="profile-info">
+                        <strong id="sidebar-usuario">
+                            {% if usuario %}{{ usuario }}{% else %}Administrador{% endif %}
+                        </strong>
+
+                        <span id="sidebar-rol">
+                            Coordinador PAE
+                        </span>
+                    </div>
                 </div>
 
-                <div id="sidebar-usuario" class="sidebar-usuario">
-                    {{ usuario if autenticado else "" }}
-                </div>
-
-                <form method="post" action="/admin/logout">
-                    <button type="submit" class="btn-logout">
-                        ⏏ Cerrar sesión
+                <form
+                    action="/admin/logout"
+                    method="post"
+                    class="logout-form"
+                >
+                    <button
+                        type="submit"
+                        class="logout-button"
+                    >
+                        <span aria-hidden="true">↪</span>
+                        Cerrar sesión
                     </button>
                 </form>
-
             </div>
 
         </aside>
 
+
         <!-- CONTENIDO PRINCIPAL -->
 
-        <main class="main-area">
+        <main class="main-content">
 
-            <div class="topbar">
+            <header class="topbar">
+                <div class="topbar-title">
+                    <span class="topbar-overline">
+                        PROGRAMA DE ALIMENTACIÓN ESCOLAR
+                    </span>
 
-                <div class="muted">
-                    I.E. Javiera Londoño · Programa de Alimentación Escolar
+                    <p id="topbar-fecha" class="topbar-date">
+                        Panel administrativo BIOPAE
+                    </p>
                 </div>
 
-                <div id="topbar-fecha" class="topbar-fecha"></div>
+                <div class="topbar-status">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span>Sistema administrativo</span>
+                </div>
+            </header>
 
-            </div>
+            <section
+                id="page-content"
+                class="page-content"
+                aria-live="polite"
+            >
+                <div class="admin-panel-card">
+                    <p>Cargando el panel administrativo...</p>
+                </div>
+            </section>
 
-            <div id="page-content" class="page-content"></div>
+            <footer class="app-footer">
+                <span>BIOPAE</span>
+                <span>Programa de Alimentación Escolar</span>
+            </footer>
 
         </main>
 
     </div>
 
-    <!-- SESIÓN Y JAVASCRIPT -->
+
+    <!-- SESIÓN REAL PROPORCIONADA POR FASTAPI -->
 
     <script>
         window.ADMIN_SESSION = {{ admin_session | tojson }};
     </script>
-
-    <script src="/static/js/app.js"></script>
 
 </body>
 </html>
