@@ -544,6 +544,76 @@ async def obtener_control_diario(request: Request):
         )
 
 
+    async function mostrarControlDiario() {
+        mostrarEncabezado(
+            "Control diario",
+            "Consulta los cupos registrados de vasos de leche y almuerzos."
+        );
+
+        const tarjeta = document.createElement("div");
+        tarjeta.className = "admin-panel-card";
+
+        const estado = document.createElement("p");
+        estado.textContent = "Cargando datos de Neon...";
+
+        const tablaContenedor = document.createElement("div");
+        tablaContenedor.style.overflowX = "auto";
+
+        tarjeta.append(estado, tablaContenedor);
+        contenido.appendChild(tarjeta);
+
+        try {
+            const datos = await obtenerJSON(
+                "/api/admin/control-diario",
+                "cupos"
+            );
+
+            if (!tarjeta.isConnected) return;
+
+            const cupos = datos.cupos;
+
+            if (cupos.length === 0) {
+                estado.textContent =
+                    "No hay cupos diarios registrados.";
+                return;
+            }
+
+            estado.textContent =
+                `${cupos.length} registros encontrados en Neon.`;
+
+            const filas = cupos.map(cupo => [
+                cupo.fecha,
+                cupo.alimento,
+                cupo.cantidad_disponible,
+                cupo.cantidad_entregada
+            ]);
+
+            tablaContenedor.replaceChildren(
+                crearTabla(
+                    [
+                        "Fecha",
+                        "Alimento",
+                        "Cupos disponibles",
+                        "Cupos entregados"
+                    ],
+                    filas
+                )
+            );
+
+        } catch (error) {
+            console.error(
+                "BIOPAE: error cargando Control diario:",
+                error
+            );
+
+            if (tarjeta.isConnected) {
+                estado.textContent =
+                    error.message ||
+                    "No fue posible cargar el control diario.";
+            }
+        }
+    }
+
 # =========================================================
 # CASOS EN REVISIÓN
 # =========================================================
