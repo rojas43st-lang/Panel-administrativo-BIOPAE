@@ -1647,4 +1647,6 @@ enlaces.forEach(enlace => {
     });
 });
 
+    // Mostrar el panel general al iniciar la sesión
+irAPagina("dashboard");
 });
