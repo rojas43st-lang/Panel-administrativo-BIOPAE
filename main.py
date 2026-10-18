@@ -665,10 +665,124 @@ async def registrar_entrega_diaria(
         )
 
 
+
 # =========================================================
 # CASOS EN REVISIÓN
 # =========================================================
 
+from datetime import date
+
+
+def generar_casos_automaticos(cursor):
+    """
+    Crea un caso automático cuando un beneficiario acumula
+    7 días de servicio disponible sin reclamar su beneficio.
+
+    Los días se calculan usando las fechas registradas
+    en cupos_diarios y las entregas normales realizadas.
+    """
+
+    cursor.execute("""
+        WITH dias_servicio AS (
+            SELECT
+                b.estudiante_id,
+                LOWER(TRIM(b.tipo_beneficio)) AS beneficio,
+                b.fecha_registro,
+                c.fecha,
+                CASE
+                    WHEN LOWER(TRIM(b.tipo_beneficio))
+                         LIKE '%%leche%%'
+                         AND LOWER(a.nombre) LIKE '%%leche%%'
+                        THEN TRUE
+                    WHEN LOWER(TRIM(b.tipo_beneficio))
+                         LIKE '%%almuerzo%%'
+                         AND LOWER(a.nombre) LIKE '%%almuerzo%%'
+                        THEN TRUE
+                    ELSE FALSE
+                END AS alimento_corresponde
+            FROM beneficiarios b
+            JOIN cupos_diarios c
+                ON c.fecha >= b.fecha_registro::date
+            JOIN alimentos a
+                ON a.id = c.alimento_id
+            WHERE b.activo = TRUE
+              AND (
+                    (
+                        LOWER(TRIM(b.tipo_beneficio))
+                            LIKE '%%leche%%'
+                        AND LOWER(a.nombre) LIKE '%%leche%%'
+                    )
+                    OR
+                    (
+                        LOWER(TRIM(b.tipo_beneficio))
+                            LIKE '%%almuerzo%%'
+                        AND LOWER(a.nombre) LIKE '%%almuerzo%%'
+                    )
+              )
+              AND (
+                    COALESCE(c.cantidad_disponible, 0)
+                    + COALESCE(c.cantidad_entregada, 0)
+                  ) > 0
+        ),
+        dias_sin_reclamar AS (
+            SELECT
+                ds.estudiante_id,
+                ds.beneficio,
+                COUNT(DISTINCT ds.fecha)::INTEGER AS total_dias
+            FROM dias_servicio ds
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM entregas en
+                JOIN alimentos a
+                    ON a.id = en.alimento_id
+                WHERE en.estudiante_id = ds.estudiante_id
+                  AND en.fecha = ds.fecha
+                  AND LOWER(en.estado) = 'entregado'
+                  AND LOWER(en.tipo_entrega) = 'normal'
+                  AND (
+                        (
+                            ds.beneficio LIKE '%%leche%%'
+                            AND LOWER(a.nombre) LIKE '%%leche%%'
+                        )
+                        OR
+                        (
+                            ds.beneficio LIKE '%%almuerzo%%'
+                            AND LOWER(a.nombre) LIKE '%%almuerzo%%'
+                        )
+                  )
+            )
+            GROUP BY ds.estudiante_id, ds.beneficio
+            HAVING COUNT(DISTINCT ds.fecha) >= 7
+        )
+        INSERT INTO casos_revision (
+            estudiante_id,
+            tipo_beneficio,
+            origen,
+            motivo,
+            dias_sin_reclamar
+        )
+        SELECT
+            d.estudiante_id,
+            CASE
+                WHEN d.beneficio LIKE '%%leche%%'
+                    THEN 'vaso de leche'
+                ELSE 'almuerzo'
+            END,
+            'automatico',
+            'Beneficio sin reclamar durante 7 o más días con servicio disponible.',
+            d.total_dias
+        FROM dias_sin_reclamar d
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM casos_revision cr
+            WHERE cr.estudiante_id = d.estudiante_id
+              AND LOWER(cr.tipo_beneficio) = d.beneficio
+              AND cr.estado = 'pendiente'
+        )
+    """)
+
+
+# Consultar casos
 @app.get("/api/admin/casos-revision")
 async def obtener_casos_revision(request: Request):
 
@@ -681,66 +795,308 @@ async def obtener_casos_revision(request: Request):
     try:
         with obtener_conexion() as conexion:
             with conexion.cursor() as cursor:
+
+                # Detectar casos automáticos nuevos.
+                generar_casos_automaticos(cursor)
+
                 cursor.execute("""
                     SELECT
-                        e.id,
-                        e.fecha,
-                        e.hora,
-                        e.tipo_entrega,
-                        e.estado,
-                        e.observacion,
-                        es.documento,
-                        es.nombre,
-                        es.apellido,
-                        a.nombre AS alimento
-                    FROM entregas e
-                    LEFT JOIN estudiantes es
-                        ON es.id = e.estudiante_id
-                    LEFT JOIN alimentos a
-                        ON a.id = e.alimento_id
-                    WHERE LOWER(COALESCE(e.estado, ''))
-                              <> 'entregado'
-                       OR NULLIF(TRIM(e.observacion), '') IS NOT NULL
-                    ORDER BY e.fecha DESC, e.id DESC
+                        cr.id,
+                        cr.estudiante_id,
+                        cr.tipo_beneficio,
+                        cr.origen,
+                        cr.motivo,
+                        cr.dias_sin_reclamar,
+                        cr.fecha_apertura,
+                        cr.estado,
+                        cr.decision,
+                        cr.fecha_resolucion,
+                        cr.resuelto_por,
+                        cr.observacion_resolucion,
+                        e.nombre,
+                        e.apellido,
+                        e.grupo
+                    FROM casos_revision cr
+                    JOIN estudiantes e
+                        ON e.id = cr.estudiante_id
+                    ORDER BY
+                        CASE WHEN cr.estado = 'pendiente'
+                             THEN 0 ELSE 1 END,
+                        cr.fecha_apertura DESC,
+                        cr.id DESC
                 """)
 
                 filas = cursor.fetchall()
 
+        casos = []
+
+        for fila in filas:
+            casos.append({
+                "id": fila[0],
+                "estudiante_id": fila[1],
+                "tipo_beneficio": fila[2],
+                "origen": fila[3],
+                "motivo": fila[4],
+                "dias_sin_reclamar": fila[5],
+                "fecha_apertura": (
+                    fila[6].isoformat() if fila[6] else None
+                ),
+                "estado": fila[7],
+                "decision": fila[8],
+                "fecha_resolucion": (
+                    fila[9].isoformat() if fila[9] else None
+                ),
+                "resuelto_por": fila[10],
+                "observacion_resolucion": fila[11],
+                "nombre": fila[12],
+                "apellido": fila[13],
+                "grupo": fila[14]
+            })
+
         return {
             "ok": True,
-            "casos": [
-                {
-                    "id": fila[0],
-                    "fecha": (
-                        fila[1].isoformat()
-                        if fila[1] else None
-                    ),
-                    "hora": (
-                        fila[2].isoformat()
-                        if fila[2] else None
-                    ),
-                    "tipo_entrega": fila[3],
-                    "estado": fila[4],
-                    "observacion": fila[5],
-                    "documento": fila[6],
-                    "nombre": fila[7],
-                    "apellido": fila[8],
-                    "alimento": fila[9],
-                }
-                for fila in filas
-            ],
-            "total": len(filas),
+            "total": len(casos),
+            "casos": casos
         }
 
     except HTTPException:
         raise
 
     except Exception:
-        logging.exception(
-            "Error consultando los casos en revisión de BIOPAE."
-        )
+        logging.exception("Error consultando casos en revisión.")
 
         raise HTTPException(
             status_code=500,
             detail="No fue posible consultar los casos en revisión."
+        )
+
+
+# Registrar un caso manual
+@app.post("/api/admin/casos-revision")
+async def registrar_caso_manual(request: Request):
+
+    if not usuario_autenticado(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Debes iniciar sesión."
+        )
+
+    try:
+        datos = await request.json()
+
+        estudiante_id = int(datos.get("estudiante_id", 0))
+        beneficio = str(
+            datos.get("tipo_beneficio", "")
+        ).strip().lower()
+        motivo = str(datos.get("motivo", "")).strip()
+
+        if estudiante_id <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Selecciona un estudiante válido."
+            )
+
+        if beneficio not in ("vaso de leche", "almuerzo"):
+            raise HTTPException(
+                status_code=400,
+                detail="El beneficio debe ser vaso de leche o almuerzo."
+            )
+
+        if not motivo:
+            raise HTTPException(
+                status_code=400,
+                detail="Escribe el motivo de la revisión."
+            )
+
+        if len(motivo) > 1000:
+            raise HTTPException(
+                status_code=400,
+                detail="El motivo no puede superar 1000 caracteres."
+            )
+
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+
+                cursor.execute("""
+                    SELECT id
+                    FROM estudiantes
+                    WHERE id = %s
+                """, (estudiante_id,))
+
+                if cursor.fetchone() is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="No se encontró el estudiante."
+                    )
+
+                cursor.execute("""
+                    INSERT INTO casos_revision (
+                        estudiante_id,
+                        tipo_beneficio,
+                        origen,
+                        motivo,
+                        dias_sin_reclamar,
+                        estado
+                    )
+                    VALUES (%s, %s, 'manual', %s, 0, 'pendiente')
+                    RETURNING id
+                """, (
+                    estudiante_id,
+                    beneficio,
+                    motivo
+                ))
+
+                caso_id = cursor.fetchone()[0]
+
+        return {
+            "ok": True,
+            "mensaje": "Caso manual registrado correctamente.",
+            "caso_id": caso_id
+        }
+
+    except HTTPException:
+        raise
+
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=400,
+            detail="Los datos enviados no son válidos."
+        )
+
+    except Exception:
+        logging.exception("Error registrando caso manual.")
+
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible registrar el caso manual."
+        )
+
+
+# Mantener el cupo o suspender el beneficio
+@app.post("/api/admin/casos-revision/{caso_id}/resolver")
+async def resolver_caso_revision(
+    caso_id: int,
+    request: Request
+):
+
+    if not usuario_autenticado(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Debes iniciar sesión."
+        )
+
+    try:
+        datos = await request.json()
+
+        decision = str(datos.get("decision", "")).strip()
+        observacion = str(
+            datos.get("observacion_resolucion", "")
+        ).strip()
+
+        if decision not in (
+            "mantener_cupo",
+            "suspender_beneficio"
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="La decisión seleccionada no es válida."
+            )
+
+        if len(observacion) > 1000:
+            raise HTTPException(
+                status_code=400,
+                detail="La observación no puede superar 1000 caracteres."
+            )
+
+        usuario = request.session.get(
+            "usuario",
+            "Administrador"
+        )
+
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+
+                cursor.execute("""
+                    SELECT
+                        estudiante_id,
+                        tipo_beneficio,
+                        estado
+                    FROM casos_revision
+                    WHERE id = %s
+                    FOR UPDATE
+                """, (caso_id,))
+
+                caso = cursor.fetchone()
+
+                if caso is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="El caso no existe."
+                    )
+
+                estudiante_id, beneficio, estado = caso
+
+                if estado != "pendiente":
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Este caso ya fue resuelto."
+                    )
+
+                if decision == "suspender_beneficio":
+                    cursor.execute("""
+                        UPDATE beneficiarios
+                        SET activo = FALSE
+                        WHERE estudiante_id = %s
+                          AND LOWER(TRIM(tipo_beneficio))
+                              = LOWER(TRIM(%s))
+                          AND activo = TRUE
+                    """, (
+                        estudiante_id,
+                        beneficio
+                    ))
+
+                    if cursor.rowcount == 0:
+                        raise HTTPException(
+                            status_code=409,
+                            detail=(
+                                "No se encontró un beneficio activo "
+                                "coincidente para suspender."
+                            )
+                        )
+
+                cursor.execute("""
+                    UPDATE casos_revision
+                    SET estado = 'resuelto',
+                        decision = %s,
+                        fecha_resolucion = CURRENT_TIMESTAMP,
+                        resuelto_por = %s,
+                        observacion_resolucion = %s
+                    WHERE id = %s
+                """, (
+                    decision,
+                    usuario,
+                    observacion or None,
+                    caso_id
+                ))
+
+        mensaje = (
+            "El cupo se mantiene. Caso resuelto."
+            if decision == "mantener_cupo"
+            else "El beneficio fue suspendido. Caso resuelto."
+        )
+
+        return {
+            "ok": True,
+            "mensaje": mensaje
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logging.exception("Error resolviendo caso de revisión.")
+
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible guardar la decisión del caso."
         )
