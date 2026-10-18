@@ -226,3 +226,43 @@
         font-size: 26px;
     }
 }
+
+/* ==============================
+   GRÁFICAS DEL PANEL BIOPAE
+   ============================== */
+
+.dashboard-charts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.dashboard-chart-card {
+    min-width: 0;
+}
+
+.dashboard-chart-container {
+    position: relative;
+    width: 100%;
+    height: 280px;
+    margin-top: 18px;
+}
+
+.dashboard-donut-container {
+    max-width: 430px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+@media (max-width: 900px) {
+    .dashboard-charts {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .dashboard-chart-container {
+        height: 240px;
+    }
+}
