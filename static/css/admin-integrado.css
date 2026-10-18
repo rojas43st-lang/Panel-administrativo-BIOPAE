@@ -512,3 +512,107 @@
     }
 }
 
+
+/* Control diario de reclamos */
+.control-reclamos {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.control-filtros {
+    display: grid;
+    grid-template-columns: 135px 175px minmax(220px, 1fr);
+    gap: 12px;
+}
+
+.control-filtros label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.control-filtros label > span {
+    color: #5b6b67;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.control-filtros input,
+.control-filtros select {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 42px;
+    padding: 9px 12px;
+    border: 1px solid #dfe4dc;
+    border-radius: 10px;
+    background: #fff;
+    color: #24332f;
+    font: inherit;
+}
+
+.control-indicadores {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.indicador {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 13px;
+    border-radius: 999px;
+    font-size: 13px;
+}
+
+.indicador-si {
+    background: #e0eee4;
+    color: #19734b;
+}
+
+.indicador-no {
+    background: #f8e5de;
+    color: #b93825;
+}
+
+.indicador-redistribuidos {
+    background: #dfebe8;
+    color: #286b88;
+}
+
+.control-reclamos .table-wrap {
+    border: 1px solid #e1e4db;
+    border-radius: 12px;
+    overflow: auto;
+}
+
+.control-reclamos .admin-table {
+    min-width: 850px;
+}
+
+.control-reclamos .admin-table td:nth-child(2) {
+    color: #172c27;
+    font-weight: 600;
+}
+
+@media (max-width: 800px) {
+    .control-filtros {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .control-buscador {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 480px) {
+    .control-filtros {
+        grid-template-columns: 1fr;
+    }
+
+    .control-buscador {
+        grid-column: auto;
+    }
+}
