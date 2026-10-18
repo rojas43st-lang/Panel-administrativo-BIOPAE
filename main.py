@@ -1,3 +1,4 @@
+
 import os
 import logging
 from pathlib import Path
@@ -121,6 +122,7 @@ def renderizar_pagina(
 
 @app.get("/", response_class=HTMLResponse)
 async def inicio(request: Request):
+
     if usuario_autenticado(request):
         return RedirectResponse(
             url="/admin",
@@ -179,6 +181,7 @@ async def iniciar_sesion(
 
 @app.get("/admin", response_class=HTMLResponse)
 async def panel_admin(request: Request):
+
     if not usuario_autenticado(request):
         return RedirectResponse(
             url="/",
@@ -203,6 +206,7 @@ async def panel_admin(request: Request):
 
 @app.get("/api/admin/estudiantes")
 async def listar_estudiantes(request: Request):
+
     if not usuario_autenticado(request):
         raise HTTPException(
             status_code=401,
@@ -212,6 +216,7 @@ async def listar_estudiantes(request: Request):
     try:
         with obtener_conexion() as conexion:
             with conexion.cursor() as cursor:
+
                 cursor.execute("""
                     SELECT
                         e.id,
@@ -235,4 +240,507 @@ async def listar_estudiantes(request: Request):
                         e.id,
                         e.documento,
                         e.nombre,
-                        e
+                        e.apellido,
+                        e.grupo,
+                        e.activo
+                    ORDER BY e.apellido, e.nombre
+                """)
+
+                filas = cursor.fetchall()
+
+                estudiantes = [
+                    {
+                        "id": fila[0],
+                        "documento": fila[1],
+                        "nombre": fila[2],
+                        "apellido": fila[3],
+                        "grupo": fila[4],
+                        "activo": fila[5],
+                        "grado": "",
+                        "es_beneficiario": (
+                            fila[6] != "No beneficiario"
+                        ),
+                        "beneficio": fila[6],
+                    }
+                    for fila in filas
+                ]
+
+        return {
+            "ok": True,
+            "total": len(estudiantes),
+            "estudiantes": estudiantes,
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logging.exception(
+            "Error consultando estudiantes y beneficiarios en Neon."
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "No fue posible consultar los estudiantes "
+                "y sus beneficios. Revisa los logs del servidor."
+            )
+        )
+
+
+# =========================================================
+# HISTORIAL DE ENTREGAS DESDE NEON
+# =========================================================
+
+@app.get("/api/admin/entregas")
+async def listar_entregas(request: Request):
+
+    if not usuario_autenticado(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Debes iniciar sesión."
+        )
+
+    try:
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+                cursor.execute("""
+                    SELECT
+                        en.id,
+                        en.fecha,
+                        en.hora,
+                        e.documento,
+                        e.nombre,
+                        e.apellido,
+                        a.nombre AS alimento,
+                        en.tipo_entrega,
+                        en.estado,
+                        en.observacion
+                    FROM entregas en
+                    JOIN estudiantes e
+                        ON e.id = en.estudiante_id
+                    JOIN alimentos a
+                        ON a.id = en.alimento_id
+                    ORDER BY en.fecha DESC, en.hora DESC, en.id DESC
+                """)
+
+                filas = cursor.fetchall()
+
+                entregas = [
+                    {
+                        "id": fila[0],
+                        "fecha": (
+                            fila[1].isoformat()
+                            if fila[1] else None
+                        ),
+                        "hora": (
+                            fila[2].isoformat()
+                            if fila[2] else None
+                        ),
+                        "documento": fila[3],
+                        "nombre": fila[4],
+                        "apellido": fila[5],
+                        "alimento": fila[6],
+                        "tipo_entrega": fila[7],
+                        "estado": fila[8],
+                        "observacion": fila[9],
+                    }
+                    for fila in filas
+                ]
+
+        return {
+            "ok": True,
+            "total": len(entregas),
+            "entregas": entregas,
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logging.exception(
+            "Error consultando el historial de entregas en Neon."
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible consultar el historial de entregas."
+        )
+
+
+# =========================================================
+# CERRAR SESIÓN
+# =========================================================
+
+@app.post("/admin/logout")
+async def cerrar_sesion(request: Request):
+
+    request.session.clear()
+
+    return RedirectResponse(
+        url="/",
+        status_code=303
+    )
+
+
+# =========================================================
+# ESTADÍSTICAS DEL PANEL GENERAL
+# =========================================================
+
+@app.get("/api/admin/estadisticas")
+async def obtener_estadisticas(request: Request):
+
+    if not usuario_autenticado(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Debes iniciar sesión."
+        )
+
+    try:
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+
+                cursor.execute("""
+                    SELECT COUNT(*)
+                    FROM estudiantes
+                    WHERE activo = TRUE
+                """)
+
+                estudiantes_activos = cursor.fetchone()[0] or 0
+
+                cursor.execute("""
+                    SELECT MAX(fecha)
+                    FROM entregas
+                    WHERE LOWER(estado) = 'entregado'
+                """)
+
+                fecha_entregas = cursor.fetchone()[0]
+
+                cursor.execute("""
+                    SELECT
+                        COUNT(*),
+                        COUNT(*) FILTER (
+                            WHERE LOWER(a.nombre) LIKE '%%leche%%'
+                        ),
+                        COUNT(*) FILTER (
+                            WHERE LOWER(a.nombre) LIKE '%%almuerzo%%'
+                        )
+                    FROM entregas e
+                    JOIN alimentos a ON a.id = e.alimento_id
+                    WHERE e.fecha = %s
+                      AND LOWER(e.estado) = 'entregado'
+                """, (fecha_entregas,))
+
+                fila = cursor.fetchone()
+
+                entregas_hoy = fila[0] or 0
+                vasos_leche = fila[1] or 0
+                almuerzos = fila[2] or 0
+
+                cursor.execute("""
+                    SELECT
+                        COALESCE(SUM(cantidad_disponible), 0),
+                        COALESCE(SUM(cantidad_entregada), 0)
+                    FROM cupos_diarios
+                    WHERE fecha = (
+                        SELECT MAX(fecha)
+                        FROM cupos_diarios
+                    )
+                """)
+
+                cupos = cursor.fetchone()
+
+        return {
+            "ok": True,
+            "estudiantes_activos": estudiantes_activos,
+            "entregas_hoy": entregas_hoy,
+            "vasos_leche": vasos_leche,
+            "almuerzos": almuerzos,
+            "cupos_disponibles": cupos[0],
+            "cupos_entregados": cupos[1],
+            "fecha_entregas": (
+                fecha_entregas.isoformat()
+                if fecha_entregas else None
+            ),
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logging.exception(
+            "Error consultando las estadísticas de BIOPAE."
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible consultar las estadísticas."
+        )
+
+
+# =========================================================
+# CONTROL DIARIO
+# =========================================================
+
+@app.get("/api/admin/control-diario")
+async def obtener_control_diario(request: Request):
+
+    if not usuario_autenticado(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Debes iniciar sesión."
+        )
+
+    try:
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+                cursor.execute("""
+                    SELECT
+                        c.id,
+                        c.fecha,
+                        a.nombre AS alimento,
+                        c.cantidad_disponible,
+                        c.cantidad_entregada
+                    FROM cupos_diarios c
+                    LEFT JOIN alimentos a
+                        ON a.id = c.alimento_id
+                    ORDER BY c.fecha DESC, c.id DESC
+                """)
+
+                filas = cursor.fetchall()
+
+        return {
+            "ok": True,
+            "cupos": [
+                {
+                    "id": fila[0],
+                    "fecha": (
+                        fila[1].isoformat()
+                        if fila[1] else None
+                    ),
+                    "alimento": fila[2] or "Sin alimento",
+                    "cantidad_disponible": fila[3] or 0,
+                    "cantidad_entregada": fila[4] or 0,
+                }
+                for fila in filas
+            ],
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logging.exception(
+            "Error consultando el control diario de BIOPAE."
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible consultar el control diario."
+        )
+
+
+# =========================================================
+# REGISTRAR UNA ENTREGA DESDE EL CONTROL DIARIO
+# =========================================================
+
+@app.post("/api/admin/control-diario/entregar")
+async def registrar_entrega_diaria(
+    request: Request,
+    estudiante_id: int = Form(...),
+    cupo_diario_id: int = Form(...),
+    observacion: str = Form(""),
+):
+    if not usuario_autenticado(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Debes iniciar sesión.",
+        )
+
+    try:
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+
+                cursor.execute(
+                    """
+                    SELECT id
+                    FROM estudiantes
+                    WHERE id = %s AND activo = TRUE
+                    """,
+                    (estudiante_id,),
+                )
+
+                if cursor.fetchone() is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="El estudiante no existe o está inactivo.",
+                    )
+
+                cursor.execute(
+                    """
+                    SELECT
+                        id,
+                        alimento_id,
+                        fecha,
+                        cantidad_disponible
+                    FROM cupos_diarios
+                    WHERE id = %s
+                    FOR UPDATE
+                    """,
+                    (cupo_diario_id,),
+                )
+
+                cupo = cursor.fetchone()
+
+                if cupo is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="No se encontró el cupo seleccionado.",
+                    )
+
+                cupo_id, alimento_id, fecha, disponibles = cupo
+
+                if disponibles is None or disponibles <= 0:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="No quedan cupos disponibles para este alimento.",
+                    )
+
+                cursor.execute(
+                    """
+                    INSERT INTO entregas (
+                        estudiante_id,
+                        alimento_id,
+                        cupo_diario_id,
+                        fecha,
+                        hora,
+                        tipo_entrega,
+                        estado,
+                        observacion
+                    )
+                    VALUES (
+                        %s, %s, %s, %s, CURRENT_TIME,
+                        'normal', 'entregado', %s
+                    )
+                    RETURNING id
+                    """,
+                    (
+                        estudiante_id,
+                        alimento_id,
+                        cupo_id,
+                        fecha,
+                        observacion.strip() or None,
+                    ),
+                )
+
+                entrega_id = cursor.fetchone()[0]
+
+                cursor.execute(
+                    """
+                    UPDATE cupos_diarios
+                    SET cantidad_disponible = cantidad_disponible - 1,
+                        cantidad_entregada = cantidad_entregada + 1
+                    WHERE id = %s
+                    """,
+                    (cupo_id,),
+                )
+
+        return {
+            "ok": True,
+            "mensaje": "Entrega registrada correctamente.",
+            "entrega_id": entrega_id,
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logging.exception(
+            "Error registrando una entrega desde el control diario."
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible registrar la entrega. Revisa los logs del servidor.",
+        )
+
+
+# =========================================================
+# CASOS EN REVISIÓN
+# =========================================================
+
+@app.get("/api/admin/casos-revision")
+async def obtener_casos_revision(request: Request):
+
+    if not usuario_autenticado(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Debes iniciar sesión."
+        )
+
+    try:
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+                cursor.execute("""
+                    SELECT
+                        e.id,
+                        e.fecha,
+                        e.hora,
+                        e.tipo_entrega,
+                        e.estado,
+                        e.observacion,
+                        es.documento,
+                        es.nombre,
+                        es.apellido,
+                        a.nombre AS alimento
+                    FROM entregas e
+                    LEFT JOIN estudiantes es
+                        ON es.id = e.estudiante_id
+                    LEFT JOIN alimentos a
+                        ON a.id = e.alimento_id
+                    WHERE LOWER(COALESCE(e.estado, ''))
+                              <> 'entregado'
+                       OR NULLIF(TRIM(e.observacion), '') IS NOT NULL
+                    ORDER BY e.fecha DESC, e.id DESC
+                """)
+
+                filas = cursor.fetchall()
+
+        return {
+            "ok": True,
+            "casos": [
+                {
+                    "id": fila[0],
+                    "fecha": (
+                        fila[1].isoformat()
+                        if fila[1] else None
+                    ),
+                    "hora": (
+                        fila[2].isoformat()
+                        if fila[2] else None
+                    ),
+                    "tipo_entrega": fila[3],
+                    "estado": fila[4],
+                    "observacion": fila[5],
+                    "documento": fila[6],
+                    "nombre": fila[7],
+                    "apellido": fila[8],
+                    "alimento": fila[9],
+                }
+                for fila in filas
+            ],
+            "total": len(filas),
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logging.exception(
+            "Error consultando los casos en revisión de BIOPAE."
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible consultar los casos en revisión."
+        )
