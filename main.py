@@ -461,3 +461,59 @@ async def obtener_estadisticas(request: Request):
             status_code=500,
             detail="No fue posible consultar las estadísticas."
         )
+
+@app.get("/api/admin/control-diario")
+async def obtener_control_diario(request: Request):
+
+    if not usuario_autenticado(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Debes iniciar sesión."
+        )
+
+    try:
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+                cursor.execute("""
+                    SELECT
+                        c.id,
+                        c.fecha,
+                        a.nombre AS alimento,
+                        c.cantidad_disponible,
+                        c.cantidad_entregada
+                    FROM cupos_diarios c
+                    LEFT JOIN alimentos a
+                        ON a.id = c.alimento_id
+                    ORDER BY c.fecha DESC, c.id DESC
+                """)
+
+                filas = cursor.fetchall()
+
+        return {
+            "ok": True,
+            "cupos": [
+                {
+                    "id": fila[0],
+                    "fecha": (
+                        fila[1].isoformat()
+                        if fila[1] else None
+                    ),
+                    "alimento": fila[2] or "Sin alimento",
+                    "cantidad_disponible": fila[3] or 0,
+                    "cantidad_entregada": fila[4] or 0
+                }
+                for fila in filas
+            ]
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logging.exception(
+            "Error consultando el control diario de BIOPAE."
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible consultar el control diario."
+        )
