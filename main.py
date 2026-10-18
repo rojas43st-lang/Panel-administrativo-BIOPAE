@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
+
 # =========================================================
 # CONFIGURACIÓN GENERAL
 # =========================================================
@@ -20,6 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
 app = FastAPI(title="Panel Administrativo BIOPAE")
+
 
 # =========================================================
 # SESIONES
@@ -37,6 +39,7 @@ app.add_middleware(
         "true"
     ).lower() == "true",
 )
+
 
 # =========================================================
 # ARCHIVOS ESTÁTICOS Y PLANTILLAS
@@ -64,6 +67,7 @@ app.mount(
 templates = Jinja2Templates(
     directory=str(TEMPLATES_DIR)
 )
+
 
 # =========================================================
 # FUNCIONES AUXILIARES
@@ -110,6 +114,7 @@ def renderizar_pagina(
         },
         status_code=status_code,
     )
+
 
 # =========================================================
 # PÁGINA PRINCIPAL
@@ -356,6 +361,7 @@ async def listar_entregas(request: Request):
         logging.exception(
             "Error consultando el historial de entregas en Neon."
         )
+
         raise HTTPException(
             status_code=500,
             detail="No fue posible consultar el historial de entregas."
@@ -375,10 +381,11 @@ async def cerrar_sesion(request: Request):
         url="/",
         status_code=303
     )
+
+
 # =========================================================
 # ESTADÍSTICAS DEL PANEL GENERAL
 # =========================================================
-
 
 @app.get("/api/admin/estadisticas")
 async def obtener_estadisticas(request: Request):
@@ -393,20 +400,25 @@ async def obtener_estadisticas(request: Request):
         with obtener_conexion() as conexion:
             with conexion.cursor() as cursor:
 
+                # Estudiantes activos
                 cursor.execute("""
                     SELECT COUNT(*)
                     FROM estudiantes
                     WHERE activo = TRUE
                 """)
+
                 estudiantes_activos = cursor.fetchone()[0] or 0
 
+                # Última fecha con entregas registradas
                 cursor.execute("""
                     SELECT MAX(fecha)
                     FROM entregas
                     WHERE LOWER(estado) = 'entregado'
                 """)
+
                 fecha_entregas = cursor.fetchone()[0]
 
+                # Entregas de la última fecha registrada
                 cursor.execute("""
                     SELECT
                         COUNT(*),
@@ -423,21 +435,24 @@ async def obtener_estadisticas(request: Request):
                 """, (fecha_entregas,))
 
                 fila = cursor.fetchone()
+
                 entregas_hoy = fila[0] or 0
                 vasos_leche = fila[1] or 0
                 almuerzos = fila[2] or 0
 
-              cursor.execute("""
-    SELECT
-        COALESCE(SUM(cantidad_disponible), 0),
-        COALESCE(SUM(cantidad_entregada), 0)
-    FROM cupos_diarios
-    WHERE fecha = (
-        SELECT MAX(fecha)
-        FROM cupos_diarios
-    )
-""")
-cupos = cursor.fetchone()
+                # Cupos de la fecha más reciente disponible
+                cursor.execute("""
+                    SELECT
+                        COALESCE(SUM(cantidad_disponible), 0),
+                        COALESCE(SUM(cantidad_entregada), 0)
+                    FROM cupos_diarios
+                    WHERE fecha = (
+                        SELECT MAX(fecha)
+                        FROM cupos_diarios
+                    )
+                """)
+
+                cupos = cursor.fetchone()
 
         return {
             "ok": True,
@@ -450,7 +465,7 @@ cupos = cursor.fetchone()
             "fecha_entregas": (
                 fecha_entregas.isoformat()
                 if fecha_entregas else None
-            )
+            ),
         }
 
     except HTTPException:
@@ -460,10 +475,16 @@ cupos = cursor.fetchone()
         logging.exception(
             "Error consultando las estadísticas de BIOPAE."
         )
+
         raise HTTPException(
             status_code=500,
             detail="No fue posible consultar las estadísticas."
         )
+
+
+# =========================================================
+# CONTROL DIARIO
+# =========================================================
 
 @app.get("/api/admin/control-diario")
 async def obtener_control_diario(request: Request):
@@ -503,10 +524,10 @@ async def obtener_control_diario(request: Request):
                     ),
                     "alimento": fila[2] or "Sin alimento",
                     "cantidad_disponible": fila[3] or 0,
-                    "cantidad_entregada": fila[4] or 0
+                    "cantidad_entregada": fila[4] or 0,
                 }
                 for fila in filas
-            ]
+            ],
         }
 
     except HTTPException:
@@ -516,10 +537,16 @@ async def obtener_control_diario(request: Request):
         logging.exception(
             "Error consultando el control diario de BIOPAE."
         )
+
         raise HTTPException(
             status_code=500,
             detail="No fue posible consultar el control diario."
         )
+
+
+# =========================================================
+# CASOS EN REVISIÓN
+# =========================================================
 
 @app.get("/api/admin/casos-revision")
 async def obtener_casos_revision(request: Request):
@@ -563,19 +590,25 @@ async def obtener_casos_revision(request: Request):
             "casos": [
                 {
                     "id": fila[0],
-                    "fecha": fila[1].isoformat() if fila[1] else None,
-                    "hora": fila[2].isoformat() if fila[2] else None,
+                    "fecha": (
+                        fila[1].isoformat()
+                        if fila[1] else None
+                    ),
+                    "hora": (
+                        fila[2].isoformat()
+                        if fila[2] else None
+                    ),
                     "tipo_entrega": fila[3],
                     "estado": fila[4],
                     "observacion": fila[5],
                     "documento": fila[6],
                     "nombre": fila[7],
                     "apellido": fila[8],
-                    "alimento": fila[9]
+                    "alimento": fila[9],
                 }
                 for fila in filas
             ],
-            "total": len(filas)
+            "total": len(filas),
         }
 
     except HTTPException:
@@ -585,6 +618,7 @@ async def obtener_casos_revision(request: Request):
         logging.exception(
             "Error consultando los casos en revisión de BIOPAE."
         )
+
         raise HTTPException(
             status_code=500,
             detail="No fue posible consultar los casos en revisión."
