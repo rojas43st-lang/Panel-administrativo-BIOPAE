@@ -156,9 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const secciones = {
         dashboard: mostrarPanelGeneral,
         estudiantes: mostrarEstudiantes,
-        historial: () => mostrarEncabezado(
-            "Historial de entregas",
-            "Esta sección se conectará con los registros reales de entregas."
+        historial: mostrarHistorial,
         ),
         control: () => mostrarEncabezado(
             "Control diario",
