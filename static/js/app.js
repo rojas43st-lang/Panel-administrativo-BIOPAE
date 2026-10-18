@@ -378,7 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
         estudiantes: mostrarEstudiantes,
         historial: mostrarHistorial,
 
-        control: () => mostrarPendiente(
+        control: mostrarControlDiario,
             "Control diario",
             "Esta sección se conectará con los cupos y entregas del día."
         ),
