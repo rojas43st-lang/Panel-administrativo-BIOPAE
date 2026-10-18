@@ -1,5 +1,6 @@
 
 import os
+import logging
 from pathlib import Path
 
 import psycopg
@@ -195,7 +196,7 @@ async def panel_admin(request: Request):
 
 
 # =========================================================
-# ESTUDIANTES DESDE NEON
+# ESTUDIANTES Y BENEFICIARIOS DESDE NEON
 # =========================================================
 
 @app.get("/api/admin/estudiantes")
@@ -213,14 +214,31 @@ async def listar_estudiantes(request: Request):
 
                 cursor.execute("""
                     SELECT
-                        id,
-                        documento,
-                        nombre,
-                        apellido,
-                        grupo,
-                        activo
-                    FROM estudiantes
-                    ORDER BY apellido, nombre
+                        e.id,
+                        e.documento,
+                        e.nombre,
+                        e.apellido,
+                        e.grupo,
+                        e.activo,
+                        COALESCE(
+                            STRING_AGG(
+                                DISTINCT b.tipo_beneficio,
+                                ', '
+                            ),
+                            'No beneficiario'
+                        ) AS beneficio
+                    FROM estudiantes e
+                    LEFT JOIN beneficiarios b
+                        ON b.estudiante_id = e.id
+                        AND b.activo = TRUE
+                    GROUP BY
+                        e.id,
+                        e.documento,
+                        e.nombre,
+                        e.apellido,
+                        e.grupo,
+                        e.activo
+                    ORDER BY e.apellido, e.nombre
                 """)
 
                 filas = cursor.fetchall()
@@ -234,7 +252,10 @@ async def listar_estudiantes(request: Request):
                         "grupo": fila[4],
                         "activo": fila[5],
                         "grado": "",
-                        "es_beneficiario": False,
+                        "es_beneficiario": (
+                            fila[6] != "No beneficiario"
+                        ),
+                        "beneficio": fila[6],
                     }
                     for fila in filas
                 ]
@@ -249,18 +270,15 @@ async def listar_estudiantes(request: Request):
         raise
 
     except Exception:
-        # Registrar detalles en los logs del servidor,
-        # sin exponer credenciales al navegador.
-        import logging
         logging.exception(
-            "Error consultando estudiantes en Neon."
+            "Error consultando estudiantes y beneficiarios en Neon."
         )
 
         raise HTTPException(
             status_code=500,
             detail=(
-                "No fue posible consultar los estudiantes. "
-                "Revisa los logs del servidor y la conexión con Neon."
+                "No fue posible consultar los estudiantes "
+                "y sus beneficios. Revisa los logs del servidor."
             )
         )
 
