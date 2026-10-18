@@ -411,10 +411,10 @@ async def obtener_estadisticas(request: Request):
                     SELECT
                         COUNT(*),
                         COUNT(*) FILTER (
-                            WHERE LOWER(a.nombre) LIKE '%leche%'
+                            WHERE LOWER(a.nombre) LIKE '%%leche%%'
                         ),
                         COUNT(*) FILTER (
-                            WHERE LOWER(a.nombre) LIKE '%almuerzo%'
+                            WHERE LOWER(a.nombre) LIKE '%%almuerzo%%'
                         )
                     FROM entregas e
                     JOIN alimentos a ON a.id = e.alimento_id
