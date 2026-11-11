@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Almuerzo | BIOPAE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap"
+        rel="stylesheet"
+    >
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/biopae1.css">
+</head>
+<body class="biopae-page availability-page">
+    <header class="module-topbar">
+        <a class="module-brand" href="/menu">
+            <img src="/biopae-static/imagenes/gordito.png" alt="">
+            <span>BIOPAE</span>
+        </a>
+        <a class="home-link" href="/">← Inicio BIOPAE</a>
+    </header>
+    <main class="availability-main">
+        <h1>Almuerzos disponibles</h1>
+        <section
+            id="cantidad-alimento"
+            class="availability-card"
+            data-alimento-id="2"
+            aria-live="polite"
+        >
+            <span>Consultando disponibilidad...</span>
+        </section>
+        <a href="/scanner?alimento=2" aria-label="Abrir escáner de almuerzos">
+            <img
+                class="availability-image"
+                src="/biopae-static/imagenes/pnwe-removebg-preview (1).png"
+                alt=""
+            >
+        </a>
+        <p>Escanea el código QR del estudiante para registrar la entrega.</p>
+        <a class="btn btn-primary" href="/scanner?alimento=2">Abrir escáner</a>
+        <p><a class="home-link" href="/menu">← Volver al menú</a></p>
+    </main>
+    <script src="/biopae-static/js/disponibilidad.js" defer></script>
+</body>
+</html>

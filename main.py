@@ -1,6 +1,7 @@
 
-import os
+import importlib.util
 import logging
+import os
 from pathlib import Path
 
 import psycopg
@@ -27,12 +28,27 @@ app = FastAPI(title="Panel Administrativo BIOPAE")
 # SESIONES
 # =========================================================
 
+SESSION_SECRET = os.getenv("SESSION_SECRET")
+
+if not SESSION_SECRET:
+    is_production = (
+        bool(os.getenv("VERCEL"))
+        or os.getenv("ENVIRONMENT", "").lower() == "production"
+    )
+
+    if is_production:
+        raise RuntimeError(
+            "SESSION_SECRET debe configurarse antes de iniciar BIOPAE en producción."
+        )
+
+    SESSION_SECRET = "clave-local-solo-desarrollo"
+    logging.warning(
+        "Se está usando una clave de sesión solo para desarrollo local."
+    )
+
 app.add_middleware(
     SessionMiddleware,
-    secret_key=os.getenv(
-        "SESSION_SECRET",
-        "clave-local-solo-desarrollo"
-    ),
+    secret_key=SESSION_SECRET,
     same_site="lax",
     https_only=os.getenv(
         "COOKIE_HTTPS_ONLY",
@@ -68,10 +84,51 @@ templates = Jinja2Templates(
     directory=str(TEMPLATES_DIR)
 )
 
+BIOPAE1_DIR = BASE_DIR / "BIOPAE1-main"
+BIOPAE1_STATIC_DIR = BIOPAE1_DIR / "static"
+BIOPAE1_MAIN = BIOPAE1_DIR / "main.py"
+
+if not BIOPAE1_MAIN.is_file() or not BIOPAE1_STATIC_DIR.is_dir():
+    raise RuntimeError(
+        "No se encontró el módulo BIOPAE1 en la carpeta BIOPAE1-main."
+    )
+
+app.mount(
+    "/biopae-static",
+    StaticFiles(directory=str(BIOPAE1_STATIC_DIR)),
+    name="biopae-static",
+)
+
+biopae1_spec = importlib.util.spec_from_file_location(
+    "biopae1_routes",
+    BIOPAE1_MAIN,
+)
+
+if biopae1_spec is None or biopae1_spec.loader is None:
+    raise RuntimeError("No fue posible cargar las rutas del módulo BIOPAE1.")
+
+biopae1_routes = importlib.util.module_from_spec(biopae1_spec)
+biopae1_spec.loader.exec_module(biopae1_routes)
+app.include_router(biopae1_routes.router)
+
 
 # =========================================================
 # FUNCIONES AUXILIARES
 # =========================================================
+
+@app.middleware("http")
+async def no_cache_admin_responses(request: Request, call_next):
+    response = await call_next(request)
+
+    if request.url.path.startswith(
+        ("/admin", "/api/admin", "/api/entregas", "/api/db-test")
+    ):
+        response.headers["Cache-Control"] = "no-store, private"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Vary"] = "Cookie"
+
+    return response
+
 
 def usuario_autenticado(request: Request) -> bool:
     return bool(request.session.get("autenticado"))
@@ -85,7 +142,15 @@ def obtener_conexion():
             "DATABASE_URL no está configurada."
         )
 
-    return psycopg.connect(database_url)
+    conexion = psycopg.connect(database_url)
+
+    with conexion.cursor() as cursor:
+        cursor.execute("SET TIME ZONE 'America/Bogota'")
+
+    return conexion
+
+
+biopae1_routes.obtener_conexion = obtener_conexion
 
 
 def renderizar_pagina(
@@ -105,7 +170,7 @@ def renderizar_pagina(
 
     return templates.TemplateResponse(
         request=request,
-        name="index.html",
+        name="admin.html",
         context={
             "autenticado": autenticado,
             "usuario": usuario,
@@ -122,12 +187,22 @@ def renderizar_pagina(
 
 @app.get("/", response_class=HTMLResponse)
 async def inicio(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={},
+    )
 
+
+@app.get("/biopae")
+async def entrar_a_biopae():
+    return RedirectResponse(url="/menu", status_code=303)
+
+
+@app.get("/admin/login", response_class=HTMLResponse)
+async def mostrar_inicio_sesion(request: Request):
     if usuario_autenticado(request):
-        return RedirectResponse(
-            url="/admin",
-            status_code=303
-        )
+        return RedirectResponse(url="/admin", status_code=303)
 
     return renderizar_pagina(request)
 
@@ -184,7 +259,7 @@ async def panel_admin(request: Request):
 
     if not usuario_autenticado(request):
         return RedirectResponse(
-            url="/",
+            url="/admin/login",
             status_code=303
         )
 

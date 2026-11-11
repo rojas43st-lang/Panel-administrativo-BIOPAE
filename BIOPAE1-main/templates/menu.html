@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Menú de operaciones del sistema BIOPAE.">
+    <title>BIOPAE | Operaciones</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap"
+        rel="stylesheet"
+    >
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/biopae1.css">
+</head>
+<body class="biopae-page">
+    <header class="module-topbar">
+        <a class="module-brand" href="/" aria-label="Volver al inicio BIOPAE">
+            <img src="/biopae-static/imagenes/gordito.png" alt="">
+            <span>BIOPAE</span>
+        </a>
+        <a class="home-link" href="/">← Inicio BIOPAE</a>
+    </header>
+
+    <main class="module-main">
+        <header class="module-heading">
+            <p class="home-eyebrow">Sistema principal</p>
+            <h1>Gestión de entregas</h1>
+            <p>Selecciona un alimento para consultar su disponibilidad o registrar una entrega.</p>
+        </header>
+
+        <section class="operation-grid" aria-label="Operaciones por alimento">
+            <article class="operation-card">
+                <div class="operation-symbol" aria-hidden="true">🥛</div>
+                <h2>Vaso de leche</h2>
+                <p>Consulta los cupos disponibles y registra la entrega mediante escaneo QR.</p>
+                <div class="operation-actions">
+                    <a class="btn btn-ghost" href="/vaso">Ver disponibilidad</a>
+                    <a class="btn btn-primary" href="/scanner?alimento=1">Abrir escáner</a>
+                </div>
+            </article>
+
+            <article class="operation-card">
+                <div class="operation-symbol operation-symbol-accent" aria-hidden="true">🍽</div>
+                <h2>Almuerzo</h2>
+                <p>Consulta los cupos disponibles y registra la entrega mediante escaneo QR.</p>
+                <div class="operation-actions">
+                    <a class="btn btn-ghost" href="/almuerzo">Ver disponibilidad</a>
+                    <a class="btn btn-primary" href="/scanner?alimento=2">Abrir escáner</a>
+                </div>
+            </article>
+        </section>
+
+        <a class="admin-entry" href="/admin">
+            <span aria-hidden="true">▦</span>
+            Acceder al panel administrativo
+        </a>
+    </main>
+</body>
+</html>

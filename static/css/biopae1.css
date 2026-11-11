@@ -1,0 +1,481 @@
+:root {
+    --biopae-bg: #f5f6f1;
+    --biopae-surface: #fff;
+    --biopae-surface-alt: #eff1e8;
+    --biopae-primary: #1f5d50;
+    --biopae-primary-dark: #14403a;
+    --biopae-primary-soft: #dceae5;
+    --biopae-accent: #e3a008;
+    --biopae-accent-soft: #fbeedb;
+    --biopae-text: #1c2b28;
+    --biopae-muted: #5b6b67;
+    --biopae-border: #e1e4db;
+    --biopae-radius: 16px;
+}
+
+.biopae-home,
+.biopae-page {
+    min-height: 100vh;
+    margin: 0;
+    background: var(--biopae-bg);
+    color: var(--biopae-text);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.biopae-home h1,
+.biopae-home h2,
+.biopae-page h1,
+.biopae-page h2 {
+    color: var(--biopae-primary-dark);
+    font-family: "Source Serif 4", Georgia, serif;
+}
+
+.home-shell {
+    width: min(100% - 40px, 1040px);
+    margin: 0 auto;
+    padding: 48px 0 24px;
+}
+
+.home-brand,
+.module-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--biopae-primary-dark);
+    text-decoration: none;
+}
+
+.home-logo,
+.module-brand img {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    object-fit: cover;
+    background: var(--biopae-primary-soft);
+}
+
+.home-brand > div {
+    display: grid;
+    gap: 2px;
+}
+
+.home-brand-name,
+.module-brand span {
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+.home-brand-caption {
+    color: var(--biopae-muted);
+    font-size: 12px;
+}
+
+.home-intro {
+    max-width: 700px;
+    margin: 68px auto 34px;
+    text-align: center;
+}
+
+.home-eyebrow {
+    margin: 0 0 10px;
+    color: var(--biopae-primary);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.home-intro h1,
+.module-heading h1 {
+    margin: 0;
+    font-size: clamp(32px, 5vw, 46px);
+    line-height: 1.15;
+}
+
+.home-description {
+    max-width: 590px;
+    margin: 14px auto 0;
+    color: var(--biopae-muted);
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+.module-grid,
+.operation-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.module-card,
+.operation-card {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 28px;
+    border: 1px solid var(--biopae-border);
+    border-radius: 20px;
+    background: var(--biopae-surface);
+    box-shadow: 0 8px 26px rgba(20, 64, 58, .06);
+}
+
+.module-icon,
+.operation-symbol {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 14px;
+    background: var(--biopae-primary-soft);
+    color: var(--biopae-primary-dark);
+    font-size: 23px;
+}
+
+.module-icon-accent,
+.operation-symbol-accent {
+    background: var(--biopae-accent-soft);
+}
+
+.module-card h2,
+.operation-card h2 {
+    margin: 20px 0 8px;
+    font-size: 22px;
+}
+
+.module-card p,
+.operation-card p {
+    flex: 1;
+    margin: 0 0 22px;
+    color: var(--biopae-muted);
+    font-size: 14px;
+    line-height: 1.65;
+}
+
+.biopae-home .btn,
+.biopae-page .btn {
+    min-height: 42px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font: 600 14px Inter, sans-serif;
+    text-decoration: none;
+}
+
+.biopae-home .btn-primary,
+.biopae-page .btn-primary {
+    background: var(--biopae-primary);
+    color: #fff;
+}
+
+.biopae-home .btn-primary:hover,
+.biopae-page .btn-primary:hover {
+    background: var(--biopae-primary-dark);
+}
+
+.biopae-page .btn-ghost {
+    border-color: var(--biopae-primary);
+    background: transparent;
+    color: var(--biopae-primary);
+}
+
+.module-action {
+    width: 100%;
+    justify-content: center;
+}
+
+.home-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 40px;
+    padding-top: 18px;
+    border-top: 1px solid var(--biopae-border);
+    color: var(--biopae-muted);
+    font-size: 12px;
+}
+
+.module-topbar {
+    display: flex;
+    min-height: 82px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px max(24px, calc((100% - 1120px) / 2));
+    border-bottom: 1px solid var(--biopae-border);
+    background: var(--biopae-surface);
+}
+
+.home-link {
+    color: var(--biopae-primary);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.module-main {
+    width: min(100% - 40px, 1040px);
+    margin: 0 auto;
+    padding: 52px 0;
+}
+
+.module-heading {
+    margin-bottom: 26px;
+}
+
+.module-heading h1 {
+    font-size: clamp(30px, 4vw, 38px);
+}
+
+.module-heading > p:last-child {
+    margin: 10px 0 0;
+    color: var(--biopae-muted);
+    line-height: 1.6;
+}
+
+.operation-actions {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.admin-entry {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 26px;
+    color: var(--biopae-primary);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.admin-shell .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.admin-home-link {
+    color: var(--biopae-primary);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.scanner-page,
+.availability-page {
+    padding-bottom: 40px;
+}
+
+.scanner-main,
+.availability-main {
+    width: min(100% - 32px, 680px);
+    margin: 36px auto;
+    text-align: center;
+}
+
+.scanner-main h1,
+.availability-main h1 {
+    margin: 0 0 8px;
+    font-size: clamp(27px, 4vw, 36px);
+}
+
+.scanner-main > p,
+.availability-main > p {
+    color: var(--biopae-muted);
+    line-height: 1.6;
+}
+
+#tipoAlimento {
+    margin: 18px;
+    color: var(--biopae-primary);
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.inventario {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    margin: 20px auto;
+}
+
+.tarjeta,
+#resultado,
+#reader,
+.availability-card {
+    border: 1px solid var(--biopae-border);
+    border-radius: var(--biopae-radius);
+    background: var(--biopae-surface);
+    box-shadow: 0 8px 24px rgba(20, 64, 58, .06);
+}
+
+.tarjeta {
+    padding: 20px;
+    border-top: 4px solid var(--biopae-primary);
+}
+
+.tarjeta.almuerzo {
+    border-top-color: var(--biopae-accent);
+}
+
+.tarjeta h3 {
+    margin: 0 0 10px;
+    color: var(--biopae-text);
+    font: 600 15px Inter, sans-serif;
+}
+
+.cantidad {
+    color: var(--biopae-primary);
+    font: 700 34px "Source Serif 4", Georgia, serif;
+}
+
+.almuerzo .cantidad {
+    color: #8a5a00;
+}
+
+.estado-inventario {
+    margin-top: 5px;
+    color: var(--biopae-muted);
+    font-size: 13px;
+}
+
+#reader,
+#resultado {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 14px;
+}
+
+#reader video {
+    border-radius: 12px;
+}
+
+#resultado {
+    display: none;
+    text-align: left;
+}
+
+#mensaje {
+    overflow-wrap: anywhere;
+    color: var(--biopae-primary-dark);
+    line-height: 1.6;
+}
+
+.scanner-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.biopae-page .boton,
+.biopae-page .recargar {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    margin: 4px;
+    padding: 10px 16px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font: 600 14px Inter, sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.biopae-page .nuevo,
+.biopae-page .recargar {
+    background: var(--biopae-primary);
+    color: #fff;
+}
+
+.biopae-page .volver {
+    border-color: var(--biopae-border);
+    background: var(--biopae-surface-alt);
+    color: var(--biopae-primary-dark);
+}
+
+.availability-card {
+    width: min(100%, 460px);
+    margin: 24px auto;
+    padding: 24px;
+}
+
+.availability-image {
+    display: block;
+    width: 120px;
+    height: 120px;
+    margin: 20px auto;
+    object-fit: contain;
+}
+
+#cantidad-alimento {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin: 20px auto;
+}
+
+.cantidad-valor {
+    color: var(--biopae-primary);
+    font: 700 38px "Source Serif 4", Georgia, serif;
+}
+
+.cantidad-etiqueta {
+    color: var(--biopae-muted);
+}
+
+.mensaje-error {
+    color: #9c2f20;
+    font-weight: 600;
+}
+
+@media (max-width: 680px) {
+    .home-shell {
+        width: min(100% - 28px, 520px);
+        padding-top: 28px;
+    }
+
+    .home-intro {
+        margin: 46px auto 26px;
+        text-align: left;
+    }
+
+    .module-grid,
+    .operation-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .module-card,
+    .operation-card {
+        padding: 22px;
+    }
+
+    .module-topbar {
+        padding: 12px 16px;
+    }
+
+    .module-main {
+        width: min(100% - 28px, 520px);
+        padding: 36px 0;
+    }
+
+    .operation-actions > .btn {
+        flex: 1 1 160px;
+        justify-content: center;
+    }
+
+    .home-footer {
+        flex-direction: column;
+    }
+
+    .admin-shell .topbar-actions {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+    }
+}
